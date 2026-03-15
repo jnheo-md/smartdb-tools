@@ -2,21 +2,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── 1. Copy-to-clipboard ──────────────────────────────────────────────
 
-  const clipboardIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
-  const checkIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+  const clipboardIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  const checkIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
 
   document.querySelectorAll('.copy-btn').forEach((btn) => {
-    // Set default icon
     btn.innerHTML = clipboardIcon;
 
     btn.addEventListener('click', () => {
       const code = btn.getAttribute('data-code');
       navigator.clipboard.writeText(code).then(() => {
-        // Show copied state
         btn.innerHTML = checkIcon;
         btn.classList.add('copied');
 
-        // Revert after 2 seconds
         setTimeout(() => {
           btn.innerHTML = clipboardIcon;
           btn.classList.remove('copied');
@@ -27,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── 2. Smooth scroll for anchor links ─────────────────────────────────
 
-  const NAV_OFFSET = 70;
+  const NAV_OFFSET = 64;
 
   document.querySelectorAll('a[href^="#"]').forEach((link) => {
     link.addEventListener('click', (e) => {
@@ -69,12 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
       hamburger.setAttribute('aria-expanded', String(isOpen));
     });
 
-    // Close when clicking a nav link
     navLinks.querySelectorAll('a').forEach((link) => {
       link.addEventListener('click', closeMobileMenu);
     });
 
-    // Close when clicking outside
     document.addEventListener('click', (e) => {
       if (!hamburger.contains(e.target) && !navLinks.contains(e.target)) {
         closeMobileMenu();
@@ -85,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── 4. Active nav highlighting with IntersectionObserver ──────────────
 
   const sections = document.querySelectorAll('section[id]');
-  const navItems = document.querySelectorAll('.nav-links a');
+  const navItems = document.querySelectorAll('.nav-links a[href^="#"]');
 
   if (sections.length > 0 && navItems.length > 0) {
     const navObserver = new IntersectionObserver(
@@ -105,38 +100,17 @@ document.addEventListener('DOMContentLoaded', () => {
     sections.forEach((section) => navObserver.observe(section));
   }
 
-  // ── 5. Scroll-triggered fade-in animations ────────────────────────────
+  // ── 5. Nav background on scroll ───────────────────────────────────────
 
-  const fadeElements = document.querySelectorAll('.fade-in');
-
-  if (fadeElements.length > 0) {
-    const fadeObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            fadeObserver.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    fadeElements.forEach((el) => fadeObserver.observe(el));
-  }
-
-  // ── 6. Nav background on scroll ───────────────────────────────────────
-
-  const nav = document.querySelector('nav');
+  const nav = document.querySelector('.nav');
 
   if (nav) {
     const onScroll = () => {
-      nav.classList.toggle('scrolled', window.scrollY > 50);
+      nav.classList.toggle('scrolled', window.scrollY > 20);
     };
 
-    // Set initial state
     onScroll();
-
     window.addEventListener('scroll', onScroll, { passive: true });
   }
+
 });
