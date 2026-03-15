@@ -5,7 +5,7 @@ CLI and MCP server for the **YSR3 Stroke Registry** — query 16,000+ stroke pat
 ## Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jnheo/smartdb-tools/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/jnheo-md/smartdb-tools/main/install.sh | bash
 ```
 
 ## What's Included

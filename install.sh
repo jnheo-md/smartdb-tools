@@ -7,7 +7,7 @@ BIN_DIR="$VENV_DIR/bin"
 MCP_DIR="$INSTALL_DIR/mcp-server"
 MIN_PYTHON_MINOR=10
 API_URL="https://api.ai.smartstroke.net"
-REPO_URL="https://github.com/jnheo/smartdb-tools.git"
+REPO_URL="https://github.com/jnheo-md/smartdb-tools.git"
 
 NO_LOGIN=false
 for arg in "$@"; do
