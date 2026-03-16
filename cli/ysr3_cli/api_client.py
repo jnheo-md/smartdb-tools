@@ -164,6 +164,7 @@ def download(path: str, json_body: dict | None = None, save_path: Path | None = 
             parts = cd.split("filename=")
             if len(parts) > 1:
                 filename = parts[1].strip().strip('"')
+        import os
         filename = os.path.basename(filename)
         if not filename or filename.startswith('.'):
             filename = "download.xlsx"
@@ -214,6 +215,7 @@ def upload_and_download(
             parts = cd.split("filename=")
             if len(parts) > 1:
                 filename = parts[1].strip().strip('"')
+        import os
         filename = os.path.basename(filename)
         if not filename or filename.startswith('.'):
             filename = "merged.xlsx"

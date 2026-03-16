@@ -107,7 +107,7 @@ def get_user_level_label(level: int) -> str:
 
 
 def _save_session(session: dict) -> None:
-    """Write session data to disk atomically with restricted permissions."""
+    """Write session data to disk with restricted permissions (atomic)."""
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
     os.chmod(SESSION_DIR, 0o700)
 
