@@ -29,9 +29,20 @@ mcp = FastMCP(
         "You have access to the YSR3 Stroke Registry database containing clinical data "
         "for ~16,000+ stroke patients across 27 Korean hospitals. The registry has ~3,000 "
         "variables covering demographics, risk factors, imaging, labs, treatment, and outcomes.\n\n"
-        "Start by using list_hospitals() to see available hospitals, then list_tables() to "
-        "understand the table structure, and search_variables() to find specific clinical "
-        "variables.\n\n"
+        "VARIABLE DISCOVERY — ALWAYS browse by section, never guess:\n"
+        "1. list_hospitals() → see available hospitals\n"
+        "2. list_tables(hospital) → see tables with descriptions and variable counts\n"
+        "3. get_table_variables(hospital, table) → shows SECTIONS (clinical categories) "
+        "with variable counts — like a table of contents\n"
+        "4. get_section_variables(hospital, table, section_number) → shows the actual "
+        "variables in that section with labels and types. PRESENT these to the user "
+        "so they can pick what they need.\n"
+        "5. get_variable_info(hospital, var) → check value encoding before filtering\n"
+        "6. search_variables() → ONLY use when the user asks for a specific concept "
+        "and you need to find which table/variable holds it. Do NOT use this to "
+        "discover variables — use the section browsing flow instead.\n\n"
+        "NEVER guess variable names. ALWAYS show the user what sections and variables "
+        "exist first, then let them choose.\n\n"
         "The main hospital is YSU (Yonsei Severance Hospital) with the richest data.\n"
         "Key tables: db_1 (Patient demographics), db_11 (Admission - main clinical data), "
         "db_12 (Thrombolysis/Treatment), db_5 (Cohort follow-up), db_19 (Stent procedures).\n\n"
@@ -120,8 +131,10 @@ async def list_tables(hospital_code: str) -> str:
 
 @mcp.tool()
 async def search_variables(hospital_code: str, query: str, limit: int = 20) -> str:
-    """Search for variables/columns in the stroke registry by name or description.
-    Supports English and Korean search terms.
+    """Search for a specific clinical concept across all tables.
+    Use this ONLY when you need to find which table contains a particular
+    variable (e.g., "where is NIHSS stored?"). For browsing what variables
+    are available in a table, use get_table_variables() instead.
 
     Args:
         hospital_code: Hospital code (e.g., 'YSU') or hidx
@@ -173,36 +186,148 @@ async def get_variable_info(hospital_code: str, variable_name: str) -> str:
 
 @mcp.tool()
 async def get_table_variables(hospital_code: str, table_name: str) -> str:
-    """List all variables in a specific table.
+    """Browse variables in a table, organized by section.
+    This is the PRIMARY tool for variable discovery. It shows sections
+    (clinical categories) with variable counts, so the user can see
+    what's available and drill into specific sections.
+
+    Call list_tables() first to see which tables exist, then call this tool.
+    Then use get_section_variables() to see variables in a specific section.
 
     Args:
         hospital_code: Hospital code or hidx
         table_name: Table name (e.g., 'db_1', 'db_11')
     """
     _require_auth()
+
+    # Try sections first (form_layout-based)
+    try:
+        sections = api_client.get(f"/schema/sections/{hospital_code}/{table_name}")
+    except api_client.APIError:
+        sections = []
+
+    if sections:
+        # Group by section_order
+        section_groups: dict[int, dict] = {}
+        for s in sections:
+            order = s["section_order"]
+            if order not in section_groups:
+                section_groups[order] = {
+                    "title": s["section_title"],
+                    "subsections": [],
+                    "total_vars": 0,
+                }
+            section_groups[order]["subsections"].append(s)
+            section_groups[order]["total_vars"] += s["variable_count"]
+
+        total_vars = sum(g["total_vars"] for g in section_groups.values())
+        lines = [
+            f"Sections in {table_name} ({hospital_code}) — {len(section_groups)} sections, {total_vars} variables",
+            "",
+        ]
+        for order in sorted(section_groups):
+            g = section_groups[order]
+            lines.append(f"  Section {order}. {g['title']}  ({g['total_vars']} vars)")
+            for sub in g["subsections"]:
+                lines.append(f"      └─ {sub['subsection_title']}  ({sub['variable_count']} vars)")
+
+        lines.append("")
+        lines.append("Use get_section_variables(hospital, table, section_number) to see the variables in a section.")
+        return "\n".join(lines)
+
+    # Fallback: flat list if no form_layout exists
     result = api_client.get(f"/schema/table-vars/{hospital_code}/{table_name}")
     if not result:
         return f"No variables found in table '{table_name}' for hospital '{hospital_code}'."
     lines = [f"Variables in {table_name} ({hospital_code}) — {len(result)} total", ""]
     for i, v in enumerate(result, 1):
-        lines.append(
-            f"  {i:>3}. {v['key']:<35s}  type={v.get('type_label', '?'):<12s}  "
-            f"label={v.get('label', '')}"
-        )
+        type_label = v.get('type_label', '?')
+        label = v.get('label', '')
+        lines.append(f"  {i:>3}. {v['key']:<35s}  [{type_label}]  {label}")
+    lines.append("")
+    lines.append("Use get_variable_info(hospital, variable_key) to see value encoding/options.")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+async def get_section_variables(hospital_code: str, table_name: str, section: int) -> str:
+    """Show all variables in a specific section of a table.
+    Use this after get_table_variables() shows the section list.
+    Present these variables to the user so they can pick which ones to query.
+
+    Args:
+        hospital_code: Hospital code or hidx
+        table_name: Table name (e.g., 'db_11')
+        section: Section number (from get_table_variables output)
+    """
+    _require_auth()
+    result = api_client.get(f"/schema/section-vars/{hospital_code}/{table_name}/{section}")
+
+    section_title = result.get("section_title", f"Section {section}")
+    subsections = result.get("subsections", [])
+
+    lines = [
+        f"Section {section}: {section_title}",
+        f"Table: {result.get('table', table_name)} ({result.get('hospital', hospital_code)})",
+        "",
+    ]
+
+    var_num = 0
+    for sub in subsections:
+        sub_title = sub.get("subsection_title", "")
+        variables = sub.get("variables", [])
+        if sub_title:
+            lines.append(f"  ── {sub_title} ({len(variables)} vars) ──")
+        for v in variables:
+            var_num += 1
+            type_label = v.get("type_label", "?")
+            label = v.get("label", "")
+            lines.append(f"    {var_num:>3}. {v['key']:<35s}  [{type_label}]  {label}")
+        lines.append("")
+
+    lines.append("Use get_variable_info(hospital, variable_key) to see value encoding/options for any variable.")
     return "\n".join(lines)
 
 
 @mcp.tool()
 async def describe_registry(hospital_code: str) -> str:
-    """Get a comprehensive overview of a hospital's registry structure.
-    Shows the table hierarchy, variable distribution, and key clinical domains.
+    """Get an overview of a hospital's registry structure.
+    Shows the table hierarchy with variable counts, helping you decide
+    which tables to browse with get_table_variables().
 
     Args:
         hospital_code: Hospital code or hidx
     """
     _require_auth()
     result = api_client.get(f"/schema/describe/{hospital_code}")
-    return json.dumps(result, ensure_ascii=False, indent=2)
+
+    summary = result.get("summary", {})
+    tables = result.get("tables", [])
+
+    lines = [
+        f"Registry: {summary.get('name', hospital_code)} ({summary.get('code', hospital_code)})",
+        f"Total variables: {summary.get('variable_count', '?')}",
+        f"Root tables: {', '.join(summary.get('root_tables', []))}",
+        "",
+        "Table Hierarchy:",
+    ]
+
+    for t in tables:
+        name = t.get("table", "")
+        label = t.get("dbname") or ""
+        vars_count = t.get("variable_count", 0)
+        rows = t.get("row_count")
+        parent = t.get("parent_table")
+        indent = "  "
+        if parent:
+            indent = "    └─ "
+        row_str = f"  ({rows:,} rows)" if rows else ""
+        label_str = f" — {label}" if label else ""
+        lines.append(f"  {indent}{name}{label_str}  [{vars_count} vars]{row_str}")
+
+    lines.append("")
+    lines.append("Use get_table_variables(hospital, table) to browse variables in any table.")
+    return "\n".join(lines)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
