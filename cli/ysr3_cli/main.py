@@ -297,6 +297,8 @@ def lookup(
     ),
 ) -> None:
     """Look up anonymized patient identity (chart number, name) from the registry."""
+    from ysr3_cli.auth import require_auth
+    require_auth()
     from ysr3_cli.api_client import APIError, post
     from ysr3_cli.formatting import console, print_error, print_table
 
@@ -367,6 +369,8 @@ def patients(
     hospital: str = typer.Argument(..., help="Hospital code (e.g., YSU)."),
 ) -> None:
     """List thrombus patients for a hospital."""
+    from ysr3_cli.auth import require_auth
+    require_auth()
     from ysr3_cli.api_client import APIError, get
     from ysr3_cli.formatting import console, print_error
 
@@ -407,6 +411,8 @@ def composition(
     thrombus_code: str = typer.Argument(..., help="Thrombus code (e.g., YSU001 or 001)."),
 ) -> None:
     """Get stain composition for a specific thrombus."""
+    from ysr3_cli.auth import require_auth
+    require_auth()
     from ysr3_cli.api_client import APIError, get
     from ysr3_cli.formatting import console, print_error
 
@@ -465,6 +471,8 @@ def search(
     ),
 ) -> None:
     """Search for clot data by patient code or thrombus code."""
+    from ysr3_cli.auth import require_auth
+    require_auth()
     from ysr3_cli.api_client import APIError, post
     from ysr3_cli.formatting import console, print_error
 
@@ -511,6 +519,8 @@ def summary(
     hospital: str = typer.Argument(..., help="Hospital code (e.g., YSU)."),
 ) -> None:
     """Show summary statistics for thrombus data."""
+    from ysr3_cli.auth import require_auth
+    require_auth()
     from ysr3_cli.api_client import APIError, get
     from ysr3_cli.formatting import console, print_error
 

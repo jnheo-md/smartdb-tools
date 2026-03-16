@@ -543,6 +543,11 @@ async def export_followup_xlsx(
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"{code}_followup_mRS_{period_key}_{ts}.csv"
 
+    # Sanitize filename to prevent path traversal
+    filename = os.path.basename(filename)
+    if not filename or filename.startswith('.'):
+        filename = "followup_export.csv"
+
     # Use CSV since we don't want pandas as a dependency
     if filename.endswith(".csv"):
         save_path = os.path.join(os.getcwd(), filename)
