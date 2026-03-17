@@ -1,6 +1,6 @@
 """
-HTTP client for the YSR3 API server.
-Shares session/config with the ysr3-cli (~/.ysr3/).
+HTTP client for the SmartDB API server.
+Shares session/config with the smartdb-cli (~/.smartdb/).
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from pathlib import Path
 
 import httpx
 
-SESSION_DIR = Path.home() / ".ysr3"
+SESSION_DIR = Path.home() / ".smartdb"
 SESSION_FILE = SESSION_DIR / "session.json"
 CONFIG_FILE = SESSION_DIR / "config.json"
 
@@ -25,7 +25,7 @@ class APIError(Exception):
 
 
 def get_api_url() -> str:
-    url = os.environ.get("YSR3_API_URL")
+    url = os.environ.get("SMARTDB_API_URL")
     if url:
         return url.rstrip("/")
     if CONFIG_FILE.exists():
@@ -75,7 +75,7 @@ def _headers() -> dict[str, str]:
 def _handle_error(response: httpx.Response) -> None:
     if response.status_code == 401:
         raise APIError(
-            "Session expired or invalid. Run 'ysr3 login' in the CLI to re-authenticate.",
+            "Session expired or invalid. Run 'smartdb login' in the CLI to re-authenticate.",
             status_code=401,
         )
     detail = f"API error (HTTP {response.status_code})"

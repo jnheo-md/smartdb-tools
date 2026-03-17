@@ -1,7 +1,7 @@
 """
 Query Commands
 ===============
-CLI commands for querying patient data from the ysr3 stroke registry via the API.
+CLI commands for querying patient data from the SmartDB registry via the API.
 """
 
 from __future__ import annotations
@@ -11,10 +11,10 @@ from typing import Optional
 
 import typer
 
-from ysr3_cli import api_client
-from ysr3_cli.api_client import APIError
-from ysr3_cli.auth import require_auth
-from ysr3_cli.formatting import (
+from smartdb_cli import api_client
+from smartdb_cli.api_client import APIError
+from smartdb_cli.auth import require_auth
+from smartdb_cli.formatting import (
     console,
     format_number,
     print_error,
@@ -180,7 +180,7 @@ def get_patient_count(
 def run_sql(
     query: str = typer.Argument(..., help="SQL SELECT query to execute"),
 ) -> None:
-    """Execute a read-only SQL query against the ysr3 database.
+    """Execute a read-only SQL query against the SmartDB database.
 
     Only SELECT, WITH, SHOW, DESCRIBE, and EXPLAIN statements are allowed.
     A LIMIT 1000 is automatically added if no LIMIT clause is present.

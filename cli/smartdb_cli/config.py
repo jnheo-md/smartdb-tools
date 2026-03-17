@@ -1,7 +1,7 @@
 """
 CLI Configuration
 ==================
-Settings for the YSR3 CLI HTTP client.
+Settings for the SmartDB CLI HTTP client.
 """
 
 import json
@@ -9,9 +9,14 @@ import os
 from pathlib import Path
 
 # -- Directories & files ------------------------------------------------------
-SESSION_DIR: Path = Path.home() / ".ysr3"
+SESSION_DIR: Path = Path.home() / ".smartdb"
 SESSION_FILE: Path = SESSION_DIR / "session.json"
 CONFIG_FILE: Path = SESSION_DIR / "config.json"
+VENV_DIR: Path = SESSION_DIR / "venv"
+BIN_DIR: Path = VENV_DIR / "bin"
+MCP_DIR: Path = SESSION_DIR / "mcp-server"
+REPO_URL: str = "https://github.com/jnheo-md/smartdb-tools.git"
+REPO_TARBALL_URL: str = "https://github.com/jnheo-md/smartdb-tools/archive/refs/heads/master.tar.gz"
 
 # -- API URL ------------------------------------------------------------------
 _DEFAULT_API_URL = "https://api.ai.smartstroke.net"
@@ -19,7 +24,7 @@ _DEFAULT_API_URL = "https://api.ai.smartstroke.net"
 
 def get_api_url() -> str:
     """Return the API base URL from env var, config file, or default."""
-    url = os.environ.get("YSR3_API_URL")
+    url = os.environ.get("SMARTDB_API_URL")
     if url:
         return url.rstrip("/")
 

@@ -3,9 +3,9 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ysr3-cli"
+name = "smartdb-cli"
 version = "0.1.0"
-description = "CLI tool for querying and exporting data from the YSR3 stroke registry"
+description = "CLI tool for querying and exporting data from the SmartDB registry"
 requires-python = ">=3.10"
 dependencies = [
     "typer[all]>=0.9.0",
@@ -20,7 +20,7 @@ merge = [
 ]
 
 [project.scripts]
-ysr3 = "ysr3_cli.main:app"
+smartdb = "smartdb_cli.main:app"
 
 [tool.setuptools.packages.find]
-include = ["ysr3_cli*"]
+include = ["smartdb_cli*"]

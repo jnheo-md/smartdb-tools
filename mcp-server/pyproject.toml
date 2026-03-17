@@ -1,7 +1,7 @@
 [project]
-name = "ysr3-mcp-v2"
+name = "smartdb-mcp"
 version = "0.1.0"
-description = "MCP server for YSR3 Stroke Registry (API-backed, no direct DB access)"
+description = "MCP server for SmartDB Registry (API-backed, no direct DB access)"
 requires-python = ">=3.10"
 dependencies = [
     "mcp[cli]>=1.0.0",

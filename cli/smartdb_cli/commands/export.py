@@ -13,11 +13,11 @@ from pathlib import Path
 
 import typer
 
-from ysr3_cli import api_client
-from ysr3_cli.api_client import APIError
-from ysr3_cli.auth import require_auth
-from ysr3_cli.config import EXPORT_DIR
-from ysr3_cli.formatting import (
+from smartdb_cli import api_client
+from smartdb_cli.api_client import APIError
+from smartdb_cli.auth import require_auth
+from smartdb_cli.config import EXPORT_DIR
+from smartdb_cli.formatting import (
     console,
     format_number,
     print_error,
@@ -301,7 +301,7 @@ def export_followup(
     (db_5, mRS_calculated) with death imputation — NOT admission_mrs variables.
 
     Example:
-        ysr3 export followup YSU -p 3m -v "pt_sex,pt_age" \\
+        smartdb export followup YSU -p 3m -v "pt_sex,pt_age" \\
           -f '[{"variable":"Thr_mechanical","operator":"=","value":"1"}]'
     """
     try:

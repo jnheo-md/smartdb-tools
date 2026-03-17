@@ -1,7 +1,7 @@
 """
 Authentication & Session Management
 =====================================
-Handles user login/logout and session persistence for the YSR3 CLI.
+Handles user login/logout and session persistence for the SmartDB CLI.
 Uses the API server for authentication instead of direct DB access.
 """
 
@@ -13,8 +13,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from ysr3_cli.config import SESSION_DIR, SESSION_FILE, get_api_url
-from ysr3_cli.formatting import print_error
+from smartdb_cli.config import SESSION_DIR, SESSION_FILE, get_api_url
+from smartdb_cli.formatting import print_error
 
 
 class AuthenticationError(Exception):
@@ -26,8 +26,8 @@ def login(email: str, password: str) -> dict:
 
     Returns the session dict on success, raises AuthenticationError on failure.
     """
-    from ysr3_cli import api_client
-    from ysr3_cli.api_client import APIError
+    from smartdb_cli import api_client
+    from smartdb_cli.api_client import APIError
 
     try:
         result = api_client.post("/auth/login", json_body={
@@ -81,8 +81,8 @@ def verify_token() -> dict | None:
 
     Returns the user dict from the server, or None if invalid.
     """
-    from ysr3_cli import api_client
-    from ysr3_cli.api_client import APIError
+    from smartdb_cli import api_client
+    from smartdb_cli.api_client import APIError
 
     try:
         result = api_client.get("/auth/me")
@@ -95,7 +95,7 @@ def require_auth() -> dict:
     """Return the current session or print an error and exit."""
     user = get_current_user()
     if user is None:
-        print_error("Not logged in. Run [bold]ysr3 login[/bold] first.")
+        print_error("Not logged in. Run [bold]smartdb login[/bold] first.")
         sys.exit(1)
     return user
 

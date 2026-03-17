@@ -1,4 +1,4 @@
-"""HTTP client for the YSR3 API server."""
+"""HTTP client for the SmartDB API server."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 import httpx
 
-SESSION_DIR = Path.home() / ".ysr3"
+SESSION_DIR = Path.home() / ".smartdb"
 SESSION_FILE = SESSION_DIR / "session.json"
 CONFIG_FILE = SESSION_DIR / "config.json"
 
@@ -27,7 +27,7 @@ def _get_api_url() -> str:
     """Return the API base URL from env var, config file, or session."""
     import os
 
-    url = os.environ.get("YSR3_API_URL")
+    url = os.environ.get("SMARTDB_API_URL")
     if url:
         return url.rstrip("/")
 
@@ -74,7 +74,7 @@ def _handle_error_response(response: httpx.Response) -> None:
     """Raise an APIError from a non-2xx response."""
     if response.status_code == 401:
         raise APIError(
-            "Session expired or invalid. Run [bold]ysr3 login[/bold] to authenticate.",
+            "Session expired or invalid. Run [bold]smartdb login[/bold] to authenticate.",
             status_code=401,
         )
     if response.status_code == 403:
@@ -105,7 +105,7 @@ def get(path: str, params: dict | None = None) -> dict | list:
     except httpx.ConnectError:
         raise APIError(
             f"Cannot connect to the API server at {_get_api_url()}. "
-            "Is the server running? Use 'ysr3 config show' to check the API URL."
+            "Is the server running? Use 'smartdb config show' to check the API URL."
         )
     except httpx.TimeoutException:
         raise APIError("Request timed out. The server may be overloaded.")
@@ -125,7 +125,7 @@ def post(path: str, json_body: dict | None = None) -> dict | list:
     except httpx.ConnectError:
         raise APIError(
             f"Cannot connect to the API server at {_get_api_url()}. "
-            "Is the server running? Use 'ysr3 config show' to check the API URL."
+            "Is the server running? Use 'smartdb config show' to check the API URL."
         )
     except httpx.TimeoutException:
         raise APIError("Request timed out. The server may be overloaded.")
@@ -148,7 +148,7 @@ def download(path: str, json_body: dict | None = None, save_path: Path | None = 
     except httpx.ConnectError:
         raise APIError(
             f"Cannot connect to the API server at {_get_api_url()}. "
-            "Is the server running? Use 'ysr3 config show' to check the API URL."
+            "Is the server running? Use 'smartdb config show' to check the API URL."
         )
     except httpx.TimeoutException:
         raise APIError("Request timed out. The export may be too large.")
@@ -168,7 +168,7 @@ def download(path: str, json_body: dict | None = None, save_path: Path | None = 
         filename = os.path.basename(filename)
         if not filename or filename.startswith('.'):
             filename = "download.xlsx"
-        from ysr3_cli.config import EXPORT_DIR
+        from smartdb_cli.config import EXPORT_DIR
 
         save_path = Path(EXPORT_DIR) / filename
 
@@ -200,7 +200,7 @@ def upload_and_download(
     except httpx.ConnectError:
         raise APIError(
             f"Cannot connect to the API server at {_get_api_url()}. "
-            "Is the server running? Use 'ysr3 config show' to check the API URL."
+            "Is the server running? Use 'smartdb config show' to check the API URL."
         )
     except httpx.TimeoutException:
         raise APIError("Request timed out. The merge may be too large.")
@@ -219,7 +219,7 @@ def upload_and_download(
         filename = os.path.basename(filename)
         if not filename or filename.startswith('.'):
             filename = "merged.xlsx"
-        from ysr3_cli.config import EXPORT_DIR
+        from smartdb_cli.config import EXPORT_DIR
 
         save_path = Path(EXPORT_DIR) / filename
 

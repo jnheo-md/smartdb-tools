@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartDB Tools — YSR3 Stroke Registry CLI & MCP Server</title>
-  <meta name="description" content="Command-line interface and MCP server for the YSR3 multi-center stroke registry. Access clinical data from 27 Korean hospitals via terminal or AI-assisted IDE integration.">
-  <meta name="keywords" content="stroke registry, clinical data, CLI, MCP server, YSR3, multi-center, medical research, Yonsei University">
+  <title>SmartDB Tools — SmartDB Stroke Registry CLI & MCP Server</title>
+  <meta name="description" content="Command-line interface and MCP server for the SmartDB multi-center stroke registry. Access clinical data from 27 Korean hospitals via terminal or AI-assisted IDE integration.">
+  <meta name="keywords" content="stroke registry, clinical data, CLI, MCP server, SmartDB, multi-center, medical research, Yonsei University">
   <meta name="author" content="Yonsei University · SmartStroke Research Platform">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="SmartDB Tools — YSR3 Stroke Registry">
-  <meta property="og:description" content="Command-line interface and MCP server for the YSR3 multi-center stroke registry.">
+  <meta property="og:title" content="SmartDB Tools — SmartDB Stroke Registry">
+  <meta property="og:description" content="Command-line interface and MCP server for the SmartDB multi-center stroke registry.">
   <meta property="og:url" content="https://github.com/jnheo-md/smartdb-tools">
   <meta property="og:site_name" content="SmartDB Tools">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="SmartDB Tools — YSR3 Stroke Registry">
-  <meta name="twitter:description" content="Command-line interface and MCP server for the YSR3 multi-center stroke registry.">
+  <meta name="twitter:title" content="SmartDB Tools — SmartDB Stroke Registry">
+  <meta name="twitter:description" content="Command-line interface and MCP server for the SmartDB multi-center stroke registry.">
 
   <!-- Favicon: inline SVG database icon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234B7BEC' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='12' cy='5' rx='9' ry='3'/%3E%3Cpath d='M21 12c0 1.66-4 3-9 3s-9-1.34-9-3'/%3E%3Cpath d='M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5'/%3E%3C/svg%3E">
@@ -63,8 +63,8 @@
   <header id="header" class="header" aria-label="Introduction">
     <div class="container">
       <h1 class="header-title">SmartDB Tools</h1>
-      <p class="header-subtitle">Command-line interface and MCP server for the YSR3 Stroke Registry</p>
-      <p class="header-description">Access clinical data from the YSR3 multi-center stroke registry through a terminal CLI or AI-assisted IDE integration. Supports schema exploration, patient data queries, outcome analysis, and data export across participating hospitals. Requires an authorized registry account.</p>
+      <p class="header-subtitle">Command-line interface and MCP server for the SmartDB Stroke Registry</p>
+      <p class="header-description">Access clinical data from the SmartDB multi-center stroke registry through a terminal CLI or AI-assisted IDE integration. Supports schema exploration, patient data queries, outcome analysis, and data export across participating hospitals. Requires an authorized registry account.</p>
 
       <div class="header-install">
         <div class="code-block">
@@ -86,9 +86,9 @@
           <span class="terminal-dot"></span>
           <span class="terminal-dot"></span>
           <span class="terminal-dot"></span>
-          <span class="terminal-title-bar">ysr3 — Terminal</span>
+          <span class="terminal-title-bar">smartdb — Terminal</span>
         </div>
-        <pre class="terminal-body"><code><span class="terminal-prompt">$</span> <span class="terminal-cmd">ysr3 schema hospitals</span>
+        <pre class="terminal-body"><code><span class="terminal-prompt">$</span> <span class="terminal-cmd">smartdb schema hospitals</span>
 <span class="terminal-label">Hospitals in the Stroke Registry</span>
 <span class="terminal-header-row">Code   Name                     HIDX  Variables</span>
 YSU    Yonsei Severance          1     3,142
@@ -96,7 +96,7 @@ EWU    Ewha Womans Univ          2     1,856
 KMU    Keimyung University       3     1,623
 ...    24 more hospitals
 
-<span class="terminal-prompt">$</span> <span class="terminal-cmd">ysr3 query followup YSU --period 3m --limit 5</span>
+<span class="terminal-prompt">$</span> <span class="terminal-cmd">smartdb query followup YSU --period 3m --limit 5</span>
 <span class="terminal-label">Follow-up mRS at 3 months</span>
 Hospital: YSU | Total patients: 2,847
 
@@ -125,7 +125,7 @@ Hospital: YSU | Total patients: 2,847
           </div>
           <div class="overview-content">
             <h3>Registry Access</h3>
-            <p>Query patient data, schemas, and clinical variables from the YSR3 database through a structured API. Browse hospitals, tables, and variable definitions across the registry.</p>
+            <p>Query patient data, schemas, and clinical variables from the SmartDB database through a structured API. Browse hospitals, tables, and variable definitions across the registry.</p>
           </div>
         </div>
 
@@ -169,7 +169,7 @@ Hospital: YSU | Total patients: 2,847
         <ul class="prereq-list">
           <li>Python 3.10 or later</li>
           <li>macOS or Linux</li>
-          <li>Authorized YSR3 registry account</li>
+          <li>Authorized SmartDB registry account</li>
         </ul>
       </div>
 
@@ -188,9 +188,9 @@ Hospital: YSU | Total patients: 2,847
         <h3>Post-Install</h3>
         <p>Authenticate with your registry credentials and verify access:</p>
         <div class="code-block">
-          <code>ysr3 login
-ysr3 whoami</code>
-          <button class="copy-btn" data-code="ysr3 login&#10;ysr3 whoami" aria-label="Copy post-install commands">
+          <code>smartdb login
+smartdb whoami</code>
+          <button class="copy-btn" data-code="smartdb login&#10;smartdb whoami" aria-label="Copy post-install commands">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -207,10 +207,10 @@ ysr3 whoami</code>
         <h3>Schema Exploration</h3>
         <p>Browse hospitals, tables, and variables. Search across clinical data points with fuzzy matching.</p>
         <div class="code-block">
-          <code>ysr3 schema hospitals
-ysr3 schema search YSU "blood pressure"
-ysr3 schema variable YSU NIHSS_total</code>
-          <button class="copy-btn" data-code="ysr3 schema hospitals&#10;ysr3 schema search YSU &quot;blood pressure&quot;&#10;ysr3 schema variable YSU NIHSS_total" aria-label="Copy schema commands">
+          <code>smartdb schema hospitals
+smartdb schema search YSU "blood pressure"
+smartdb schema variable YSU NIHSS_total</code>
+          <button class="copy-btn" data-code="smartdb schema hospitals&#10;smartdb schema search YSU &quot;blood pressure&quot;&#10;smartdb schema variable YSU NIHSS_total" aria-label="Copy schema commands">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -220,10 +220,10 @@ ysr3 schema variable YSU NIHSS_total</code>
         <h3>Patient Data Queries</h3>
         <p>Query patient data with automatic table joins. Filter by any variable with support for complex conditions.</p>
         <div class="code-block">
-          <code>ysr3 query data YSU \
+          <code>smartdb query data YSU \
   --vars "pt_sex,pt_age,NIHSS_total" \
   --filters '[{"variable":"Thr_mechanical","operator":"=","value":"1"}]'</code>
-          <button class="copy-btn" data-code="ysr3 query data YSU --vars &quot;pt_sex,pt_age,NIHSS_total&quot; --filters '[{&quot;variable&quot;:&quot;Thr_mechanical&quot;,&quot;operator&quot;:&quot;=&quot;,&quot;value&quot;:&quot;1&quot;}]'" aria-label="Copy query command">
+          <button class="copy-btn" data-code="smartdb query data YSU --vars &quot;pt_sex,pt_age,NIHSS_total&quot; --filters '[{&quot;variable&quot;:&quot;Thr_mechanical&quot;,&quot;operator&quot;:&quot;=&quot;,&quot;value&quot;:&quot;1&quot;}]'" aria-label="Copy query command">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -233,9 +233,9 @@ ysr3 schema variable YSU NIHSS_total</code>
         <h3>Follow-up Outcomes</h3>
         <p>Retrieve mRS outcomes with automatic death imputation from the cohort table.</p>
         <div class="code-block">
-          <code>ysr3 query followup YSU --period 3m
-ysr3 query followup YSU --period 12m --limit 20</code>
-          <button class="copy-btn" data-code="ysr3 query followup YSU --period 3m&#10;ysr3 query followup YSU --period 12m --limit 20" aria-label="Copy followup commands">
+          <code>smartdb query followup YSU --period 3m
+smartdb query followup YSU --period 12m --limit 20</code>
+          <button class="copy-btn" data-code="smartdb query followup YSU --period 3m&#10;smartdb query followup YSU --period 12m --limit 20" aria-label="Copy followup commands">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -245,9 +245,9 @@ ysr3 query followup YSU --period 12m --limit 20</code>
         <h3>Clot Composition Data</h3>
         <p>Access thrombus histology data from the ARIA study, including platelet, fibrin, RBC, and neutrophil composition.</p>
         <div class="code-block">
-          <code>ysr3 clot patients YSU
-ysr3 clot composition YSU YSU001</code>
-          <button class="copy-btn" data-code="ysr3 clot patients YSU&#10;ysr3 clot composition YSU YSU001" aria-label="Copy clot commands">
+          <code>smartdb clot patients YSU
+smartdb clot composition YSU YSU001</code>
+          <button class="copy-btn" data-code="smartdb clot patients YSU&#10;smartdb clot composition YSU YSU001" aria-label="Copy clot commands">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -257,9 +257,9 @@ ysr3 clot composition YSU YSU001</code>
         <h3>Data Export</h3>
         <p>Export filtered datasets to XLSX for downstream analysis.</p>
         <div class="code-block">
-          <code>ysr3 export data YSU --vars "pt_sex,pt_age,NIHSS_total"
-ysr3 export followup YSU -p 3m -v "pt_sex,pt_age"</code>
-          <button class="copy-btn" data-code="ysr3 export data YSU --vars &quot;pt_sex,pt_age,NIHSS_total&quot;&#10;ysr3 export followup YSU -p 3m -v &quot;pt_sex,pt_age&quot;" aria-label="Copy export commands">
+          <code>smartdb export data YSU --vars "pt_sex,pt_age,NIHSS_total"
+smartdb export followup YSU -p 3m -v "pt_sex,pt_age"</code>
+          <button class="copy-btn" data-code="smartdb export data YSU --vars &quot;pt_sex,pt_age,NIHSS_total&quot;&#10;smartdb export followup YSU -p 3m -v &quot;pt_sex,pt_age&quot;" aria-label="Copy export commands">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -336,7 +336,7 @@ ysr3 export followup YSU -p 3m -v "pt_sex,pt_age"</code>
         <div class="footer-brand">
           <span class="footer-name">SmartDB Tools</span>
           <span class="footer-sep" aria-hidden="true">&mdash;</span>
-          <span class="footer-registry">YSR3 Stroke Registry</span>
+          <span class="footer-registry">SmartDB Stroke Registry</span>
         </div>
         <div class="footer-links">
           <a href="https://github.com/jnheo-md/smartdb-tools" target="_blank" rel="noopener noreferrer">GitHub</a>

@@ -2,9 +2,9 @@
 
 ## Architecture
 
-SmartDB Tools (YSR3 CLI and MCP Server) connect to the YSR3 API server over **HTTPS only**. There is no direct database access from client tools.
+SmartDB Tools (SmartDB CLI and MCP Server) connect to the SmartDB API server over **HTTPS only**. There is no direct database access from client tools.
 
-- **Authentication**: JWT-based. Tokens are stored locally at `~/.ysr3/session.json` with `0600` permissions.
+- **Authentication**: JWT-based. Tokens are stored locally at `~/.smartdb/session.json` with `0600` permissions.
 - **Session files**: Written atomically (write to `.tmp` then rename) to prevent partial reads.
 - **Role-based access**: The API server enforces user-level permissions. Manager and Super Admin roles have additional capabilities.
 - **No secrets in repo**: This repository contains no API keys, database credentials, or `.env` files.

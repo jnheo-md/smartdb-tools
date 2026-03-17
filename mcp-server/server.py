@@ -1,11 +1,11 @@
 """
-YSR3 Stroke Registry MCP Server (v2 — API-backed)
-===================================================
-Connects to the YSR3 API server over HTTPS instead of direct MySQL.
-Shares login session with the ysr3-cli (~/.ysr3/session.json).
+SmartDB Registry MCP Server (API-backed)
+==========================================
+Connects to the SmartDB API server over HTTPS instead of direct MySQL.
+Shares login session with the smartdb-cli (~/.smartdb/session.json).
 
 If not logged in, tools will return an error asking the user to run
-'ysr3 login' in the CLI first.
+'smartdb login' in the CLI first.
 """
 
 from __future__ import annotations
@@ -24,9 +24,9 @@ import api_client
 # ---------------------------------------------------------------------------
 
 mcp = FastMCP(
-    "YSR3 Stroke Registry",
+    "SmartDB Registry",
     instructions=(
-        "You have access to the YSR3 Stroke Registry database containing clinical data "
+        "You have access to the SmartDB Registry database containing clinical data "
         "for ~16,000+ stroke patients across 27 Korean hospitals. The registry has ~3,000 "
         "variables covering demographics, risk factors, imaging, labs, treatment, and outcomes.\n\n"
         "VARIABLE DISCOVERY — ALWAYS browse by section, never guess:\n"
@@ -65,7 +65,7 @@ def _require_auth() -> None:
     """Raise if not logged in."""
     if not api_client.is_logged_in():
         raise api_client.APIError(
-            "Not logged in. Please run 'ysr3 login' in the CLI first to authenticate, "
+            "Not logged in. Please run 'smartdb login' in the CLI first to authenticate, "
             "then restart this MCP server.",
             status_code=401,
         )
@@ -412,7 +412,7 @@ async def get_patient_count(hospital_code: str, filters: str = "") -> str:
 
 @mcp.tool()
 async def run_sql(query: str) -> str:
-    """Execute a read-only SQL query against the ysr3 database.
+    """Execute a read-only SQL query against the SmartDB database.
 
     SAFETY: Only SELECT queries are allowed. Any INSERT/UPDATE/DELETE/DROP/ALTER
     will be rejected. A LIMIT 1000 is auto-added if no LIMIT is present.

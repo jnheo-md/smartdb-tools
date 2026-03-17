@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-INSTALL_DIR="$HOME/.ysr3"
+INSTALL_DIR="$HOME/.smartdb"
 VENV_DIR="$INSTALL_DIR/venv"
 BIN_DIR="$VENV_DIR/bin"
 MCP_DIR="$INSTALL_DIR/mcp-server"
@@ -36,7 +36,7 @@ if os.path.isfile(config_file):
 if "mcpServers" not in data:
     data["mcpServers"] = {}
 
-data["mcpServers"]["ysr3"] = {
+data["mcpServers"]["smartdb"] = {
     "command": python_path,
     "args": [server_script],
 }
@@ -51,21 +51,21 @@ PYEOF
 # ── Main ─────────────────────────────────────────────────────────────────────
 main() {
     echo ""
-    bold "  YSR3 MCP Server Installer"
-    bold "  ========================="
+    bold "  SmartDB MCP Server Installer"
+    bold "  ============================"
     echo ""
 
     local script_dir
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-    # ── 1. Check that ysr3-cli is already installed ──────────────────────────
-    if [ ! -d "$VENV_DIR" ] || [ ! -x "$BIN_DIR/ysr3" ]; then
-        red "  Error: ysr3-cli is not installed."
+    # ── 1. Check that smartdb-cli is already installed ────────────────────────
+    if [ ! -d "$VENV_DIR" ] || [ ! -x "$BIN_DIR/smartdb" ]; then
+        red "  Error: smartdb-cli is not installed."
         echo ""
-        echo "  The MCP server requires the ysr3-cli for authentication."
+        echo "  The MCP server requires the smartdb-cli for authentication."
         echo "  Install it first:"
         echo ""
-        echo "    cd /path/to/ysr3-cli && bash install.sh"
+        echo "    cd /path/to/smartdb-cli && bash install.sh"
         echo ""
         echo "  Or install everything at once from the smartdb-tools repo:"
         echo "    https://github.com/jnheo-md/smartdb-tools"
@@ -73,7 +73,7 @@ main() {
         exit 1
     fi
 
-    dim "  Found ysr3-cli: $("$BIN_DIR/ysr3" --version 2>&1)"
+    dim "  Found smartdb-cli: $("$BIN_DIR/smartdb" --version 2>&1)"
 
     # ── 2. Check login status ────────────────────────────────────────────────
     local session_file="$INSTALL_DIR/session.json"
@@ -82,7 +82,7 @@ main() {
         bold "  Not logged in"
         echo "  The MCP server needs an active session. Logging in now..."
         echo ""
-        "$BIN_DIR/ysr3" login
+        "$BIN_DIR/smartdb" login
         echo ""
     else
         dim "  Session file found."
@@ -146,13 +146,13 @@ main() {
     if [ "$configured_any" = false ]; then
         dim "  No AI tools detected. You can manually add this MCP config:"
         echo ""
-        echo "    {\"ysr3\": {\"command\": \"$venv_python\", \"args\": [\"$server_script\"]}}"
+        echo "    {\"smartdb\": {\"command\": \"$venv_python\", \"args\": [\"$server_script\"]}}"
         echo ""
     fi
 
     # ── Done ─────────────────────────────────────────────────────────────────
     echo ""
-    green "  ✓ YSR3 MCP Server installed successfully!"
+    green "  ✓ SmartDB MCP Server installed successfully!"
     echo ""
     echo "  MCP server files:  $MCP_DIR/"
     echo "  Python venv:       $VENV_DIR/"

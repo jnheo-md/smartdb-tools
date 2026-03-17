@@ -1,24 +1,25 @@
 """
-YSR3 CLI
-=========
-Command-line interface for querying and exporting data from the YSR3
-stroke registry via the API server.
+SmartDB CLI
+============
+Command-line interface for querying and exporting data from the SmartDB
+registry via the API server.
 """
 
+from pathlib import Path
 from typing import Optional
 
 import typer
 
-from ysr3_cli import __version__
-from ysr3_cli.commands.schema import app as schema_app
-from ysr3_cli.commands.query import app as query_app
-from ysr3_cli.commands.export import app as export_app
+from smartdb_cli import __version__
+from smartdb_cli.commands.schema import app as schema_app
+from smartdb_cli.commands.query import app as query_app
+from smartdb_cli.commands.export import app as export_app
 
 app = typer.Typer(
-    name="ysr3",
+    name="smartdb",
     help=(
-        "CLI tool for the YSR3 stroke registry.\n\n"
-        "IMPORTANT FOR AI AGENTS: Run 'ysr3 guide' first to learn critical "
+        "CLI tool for the SmartDB registry.\n\n"
+        "IMPORTANT FOR AI AGENTS: Run 'smartdb guide' first to learn critical "
         "domain rules (e.g., always use 'query followup' for mRS outcomes, "
         "never 'query data' with admission_mrs variables)."
     ),
@@ -33,7 +34,7 @@ app.add_typer(export_app, name="export", help="Export patient data to XLSX files
 
 def _version_callback(value: bool) -> None:
     if value:
-        typer.echo(f"ysr3-cli {__version__}")
+        typer.echo(f"smartdb-cli {__version__}")
         raise typer.Exit()
 
 
@@ -44,7 +45,7 @@ def main(
         help="Show version and exit.",
     ),
 ) -> None:
-    """YSR3 stroke registry CLI."""
+    """SmartDB registry CLI."""
 
 
 # ---------------------------------------------------------------------------
@@ -53,10 +54,10 @@ def main(
 
 @app.command()
 def login() -> None:
-    """Log in to the YSR3 stroke registry."""
-    from ysr3_cli import auth
-    from ysr3_cli.api_client import APIError
-    from ysr3_cli.formatting import console, print_error, print_success
+    """Log in to the SmartDB registry."""
+    from smartdb_cli import auth
+    from smartdb_cli.api_client import APIError
+    from smartdb_cli.formatting import console, print_error, print_success
 
     email = typer.prompt("Email")
     password = typer.prompt("Password", hide_input=True)
@@ -81,20 +82,119 @@ def login() -> None:
 
 @app.command()
 def logout() -> None:
-    """Log out from the YSR3 stroke registry."""
-    from ysr3_cli import auth
-    from ysr3_cli.formatting import print_success
+    """Log out from the SmartDB registry."""
+    from smartdb_cli import auth
+    from smartdb_cli.formatting import print_success
 
     auth.logout()
     print_success("Logged out.")
 
 
 @app.command()
+def update() -> None:
+    """Update smartdb-cli and MCP server to the latest version."""
+    import importlib.metadata
+    import shutil
+    import subprocess
+    import tarfile
+    import tempfile
+    from urllib.request import urlopen
+
+    from smartdb_cli.config import BIN_DIR, MCP_DIR, REPO_TARBALL_URL, REPO_URL
+    from smartdb_cli.formatting import console, print_error, print_success
+
+    old_version = __version__
+    tmp_dir = None
+
+    try:
+        tmp_dir = tempfile.mkdtemp(prefix="smartdb-update-")
+        repo_dir = None
+
+        # -- Step 1: Clone / download latest source --------------------------
+        with console.status("[bold cyan]Downloading latest version…"):
+            if shutil.which("git"):
+                result = subprocess.run(
+                    ["git", "clone", "--depth", "1", REPO_URL, f"{tmp_dir}/repo"],
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode == 0:
+                    repo_dir = f"{tmp_dir}/repo"
+
+            if repo_dir is None:
+                # Fallback: download tarball
+                tarball_path = f"{tmp_dir}/repo.tar.gz"
+                with urlopen(REPO_TARBALL_URL) as resp:
+                    with open(tarball_path, "wb") as f:
+                        f.write(resp.read())
+                with tarfile.open(tarball_path, "r:gz") as tar:
+                    tar.extractall(tmp_dir)
+                # Tarball extracts to smartdb-tools-master/
+                extracted = [
+                    d for d in Path(tmp_dir).iterdir()
+                    if d.is_dir() and d.name != "repo"
+                ]
+                if not extracted:
+                    print_error("Failed to extract update archive.")
+                    raise typer.Exit(code=1)
+                repo_dir = str(extracted[0])
+
+        pip = str(BIN_DIR / "pip")
+
+        # -- Step 2: Upgrade CLI package -------------------------------------
+        with console.status("[bold cyan]Upgrading CLI…"):
+            result = subprocess.run(
+                [pip, "install", "--quiet", "--upgrade", f"{repo_dir}/cli"],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                print_error(f"CLI upgrade failed:\n{result.stderr}")
+                raise typer.Exit(code=1)
+
+        # -- Step 3: Upgrade MCP server dependencies -------------------------
+        with console.status("[bold cyan]Upgrading MCP server dependencies…"):
+            result = subprocess.run(
+                [pip, "install", "--quiet", "mcp[cli]>=1.0.0", "httpx>=0.25.0"],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                print_error(f"MCP dependency upgrade failed:\n{result.stderr}")
+                raise typer.Exit(code=1)
+
+        # -- Step 4: Copy MCP server files -----------------------------------
+        with console.status("[bold cyan]Updating MCP server files…"):
+            MCP_DIR.mkdir(parents=True, exist_ok=True)
+            src_mcp = Path(repo_dir) / "mcp-server"
+            for filename in ("server.py", "api_client.py"):
+                src = src_mcp / filename
+                if src.exists():
+                    shutil.copy2(src, MCP_DIR / filename)
+
+        # -- Step 5: Report version ------------------------------------------
+        new_version = importlib.metadata.version("smartdb-cli")
+        if new_version == old_version:
+            print_success(f"Already up to date (v{old_version}).")
+        else:
+            print_success(f"Updated v{old_version} → v{new_version}")
+
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        print_error(f"Update failed: {exc}")
+        raise typer.Exit(code=1)
+    finally:
+        if tmp_dir:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+@app.command()
 def whoami() -> None:
     """Show the currently logged-in user."""
-    from ysr3_cli import auth
-    from ysr3_cli.api_client import APIError
-    from ysr3_cli.formatting import console, print_warning
+    from smartdb_cli import auth
+    from smartdb_cli.api_client import APIError
+    from smartdb_cli.formatting import console, print_warning
 
     from rich.panel import Panel
     from rich.table import Table
@@ -108,7 +208,7 @@ def whoami() -> None:
     server_user = auth.verify_token()
     if server_user is None:
         print_warning(
-            "Session token may be expired. Run [bold]ysr3 login[/bold] to re-authenticate."
+            "Session token may be expired. Run [bold]smartdb login[/bold] to re-authenticate."
         )
 
     level_label = auth.get_user_level_label(user.get("level", 0))
@@ -144,8 +244,8 @@ def config_set_url(
     url: str = typer.Argument(..., help="API server URL (e.g. http://localhost:8000)"),
 ) -> None:
     """Set the API server URL."""
-    from ysr3_cli.config import set_api_url
-    from ysr3_cli.formatting import print_success
+    from smartdb_cli.config import set_api_url
+    from smartdb_cli.formatting import print_success
 
     set_api_url(url)
     print_success(f"API URL set to: {url}")
@@ -154,9 +254,9 @@ def config_set_url(
 @config_app.command("show")
 def config_show() -> None:
     """Show current configuration."""
-    from ysr3_cli import auth
-    from ysr3_cli.config import EXPORT_DIR, get_api_url, SESSION_FILE, CONFIG_FILE
-    from ysr3_cli.formatting import console
+    from smartdb_cli import auth
+    from smartdb_cli.config import EXPORT_DIR, get_api_url, SESSION_FILE, CONFIG_FILE
+    from smartdb_cli.formatting import console
 
     from rich.panel import Panel
     from rich.table import Table
@@ -177,7 +277,7 @@ def config_show() -> None:
     else:
         info.add_row("Logged in as", "[dim]Not logged in[/dim]")
 
-    console.print(Panel(info, title="YSR3 CLI Configuration", border_style="cyan", expand=False))
+    console.print(Panel(info, title="SmartDB CLI Configuration", border_style="cyan", expand=False))
 
 
 # ---------------------------------------------------------------------------
@@ -185,8 +285,8 @@ def config_show() -> None:
 # ---------------------------------------------------------------------------
 
 _GUIDE_TEXT = """\
-YSR3 CLI — Domain Guide for AI Agents
-======================================
+SmartDB CLI — Domain Guide for AI Agents
+==========================================
 
 READ THIS BEFORE querying outcome data. These rules prevent common mistakes.
 
@@ -198,7 +298,7 @@ The registry stores mRS outcomes in TWO places:
   - db_5 (Cohort table): 'mRS_calculated' — the CORRECT outcome variable,
     computed from structured follow-up assessments.
 
-ALWAYS use 'ysr3 query followup' or 'ysr3 export followup' for mRS outcomes.
+ALWAYS use 'smartdb query followup' or 'smartdb export followup' for mRS outcomes.
 These commands:
   - Pull mRS from the cohort table (db_5) using 'mRS_calculated'
   - Filter by follow-up period (3m, 6m, 12m, 2y, etc.) via checkbox columns
@@ -220,11 +320,11 @@ A single patient can have multiple cohort rows (one per follow-up visit).
 Use --filters with 'query followup' or 'export followup' to select subgroups:
 
   # Mechanical thrombectomy patients only
-  ysr3 query followup YSU -p 3m \\
+  smartdb query followup YSU -p 3m \\
     -f '[{"variable":"Thr_mechanical","operator":"=","value":"1"}]'
 
   # Filter by admission date range
-  ysr3 export followup YSU -p 3m \\
+  smartdb export followup YSU -p 3m \\
     -f '[{"variable":"adm_date","operator":">=","value":"2024-01-01"}]'
 
 Filters are applied to both the cohort query and the death imputation query.
@@ -248,12 +348,12 @@ Example: patients admitted from June 2024:
 SELECT/CHECKBOX variables store coded values, NOT labels:
   - Thr_mechanical: 1 = Yes, 0 = No  (NOT "Yes"/"No")
   - pt_sex: M / F
-  - Use 'ysr3 schema variable <hospital> <var>' to see the value map.
+  - Use 'smartdb schema variable <hospital> <var>' to see the value map.
 
 ## 6. Hospital Codes
 
 Use hospital code (e.g., 'YSU') or hidx number (e.g., '1').
-Run 'ysr3 schema hospitals' to see all available hospitals.
+Run 'smartdb schema hospitals' to see all available hospitals.
 Not all hospitals have the same tables or variables.
 
 ## 7. Table Hierarchy
@@ -273,7 +373,7 @@ different tables. No manual JOIN needed.
 @app.command()
 def guide() -> None:
     """Print domain guide for AI agents. READ THIS FIRST before querying outcomes."""
-    from ysr3_cli.formatting import console
+    from smartdb_cli.formatting import console
     from rich.markdown import Markdown
 
     console.print(Markdown(_GUIDE_TEXT))
@@ -297,10 +397,10 @@ def lookup(
     ),
 ) -> None:
     """Look up anonymized patient identity (chart number, name) from the registry."""
-    from ysr3_cli.auth import require_auth
+    from smartdb_cli.auth import require_auth
     require_auth()
-    from ysr3_cli.api_client import APIError, post
-    from ysr3_cli.formatting import console, print_error, print_table
+    from smartdb_cli.api_client import APIError, post
+    from smartdb_cli.formatting import console, print_error, print_table
 
     # Map user-friendly field names to API field names
     field_map = {"chart": "data1", "name": "data2", "id": "reg_num"}
@@ -369,10 +469,10 @@ def patients(
     hospital: str = typer.Argument(..., help="Hospital code (e.g., YSU)."),
 ) -> None:
     """List thrombus patients for a hospital."""
-    from ysr3_cli.auth import require_auth
+    from smartdb_cli.auth import require_auth
     require_auth()
-    from ysr3_cli.api_client import APIError, get
-    from ysr3_cli.formatting import console, print_error
+    from smartdb_cli.api_client import APIError, get
+    from smartdb_cli.formatting import console, print_error
 
     from rich.table import Table as RichTable
 
@@ -411,10 +511,10 @@ def composition(
     thrombus_code: str = typer.Argument(..., help="Thrombus code (e.g., YSU001 or 001)."),
 ) -> None:
     """Get stain composition for a specific thrombus."""
-    from ysr3_cli.auth import require_auth
+    from smartdb_cli.auth import require_auth
     require_auth()
-    from ysr3_cli.api_client import APIError, get
-    from ysr3_cli.formatting import console, print_error
+    from smartdb_cli.api_client import APIError, get
+    from smartdb_cli.formatting import console, print_error
 
     from rich.panel import Panel
     from rich.table import Table as RichTable
@@ -471,10 +571,10 @@ def search(
     ),
 ) -> None:
     """Search for clot data by patient code or thrombus code."""
-    from ysr3_cli.auth import require_auth
+    from smartdb_cli.auth import require_auth
     require_auth()
-    from ysr3_cli.api_client import APIError, post
-    from ysr3_cli.formatting import console, print_error
+    from smartdb_cli.api_client import APIError, post
+    from smartdb_cli.formatting import console, print_error
 
     from rich.table import Table as RichTable
 
@@ -519,10 +619,10 @@ def summary(
     hospital: str = typer.Argument(..., help="Hospital code (e.g., YSU)."),
 ) -> None:
     """Show summary statistics for thrombus data."""
-    from ysr3_cli.auth import require_auth
+    from smartdb_cli.auth import require_auth
     require_auth()
-    from ysr3_cli.api_client import APIError, get
-    from ysr3_cli.formatting import console, print_error
+    from smartdb_cli.api_client import APIError, get
+    from smartdb_cli.formatting import console, print_error
 
     from rich.panel import Panel
 

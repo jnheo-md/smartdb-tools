@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-INSTALL_DIR="$HOME/.ysr3"
+INSTALL_DIR="$HOME/.smartdb"
 VENV_DIR="$INSTALL_DIR/venv"
 BIN_DIR="$VENV_DIR/bin"
 MCP_DIR="$INSTALL_DIR/mcp-server"
@@ -100,7 +100,7 @@ if os.path.isfile(config_file):
 if "mcpServers" not in data:
     data["mcpServers"] = {}
 
-data["mcpServers"]["ysr3"] = {
+data["mcpServers"]["smartdb"] = {
     "command": python_path,
     "args": [server_script],
 }
@@ -124,7 +124,7 @@ main() {
 
     # Check if we're running from inside the repo
     local script_dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || script_dir=""
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" 2>/dev/null && pwd)" || script_dir=""
 
     if [ -n "$script_dir" ] && [ -f "$script_dir/cli/pyproject.toml" ]; then
         source_dir="$script_dir"
@@ -171,20 +171,20 @@ main() {
 
     "$BIN_DIR/pip" install --quiet --upgrade pip 2>/dev/null
 
-    # ── 3. Install ysr3-cli ──────────────────────────────────────────────────
+    # ── 3. Install smartdb-cli ────────────────────────────────────────────────
     if [ -d "$cli_dir" ]; then
-        dim "  Installing ysr3-cli from $cli_dir ..."
+        dim "  Installing smartdb-cli from $cli_dir ..."
         "$BIN_DIR/pip" install --quiet "$cli_dir"
     else
         red "  Error: cli directory not found at $cli_dir"
         exit 1
     fi
 
-    if ! "$BIN_DIR/ysr3" --version &>/dev/null; then
-        red "  Error: ysr3-cli installation failed — ysr3 binary not found."
+    if ! "$BIN_DIR/smartdb" --version &>/dev/null; then
+        red "  Error: smartdb-cli installation failed — smartdb binary not found."
         exit 1
     fi
-    dim "  ysr3-cli installed: $("$BIN_DIR/ysr3" --version 2>&1)"
+    dim "  smartdb-cli installed: $("$BIN_DIR/smartdb" --version 2>&1)"
 
     # ── 4. Install MCP server dependencies ───────────────────────────────────
     dim "  Installing MCP server dependencies ..."
@@ -212,22 +212,22 @@ main() {
             dim "  Backed up $rc_file"
         fi
         echo "" >> "$rc_file"
-        echo "# YSR3 CLI (SmartDB Tools)" >> "$rc_file"
+        echo "# SmartDB CLI (SmartDB Tools)" >> "$rc_file"
         echo "$line_to_add" >> "$rc_file"
         dim "  Added $BIN_DIR to PATH in $rc_file"
     fi
 
     # ── 7. Configure API URL ─────────────────────────────────────────────────
     dim "  Setting API URL to $API_URL ..."
-    "$BIN_DIR/ysr3" config set-url "$API_URL"
+    "$BIN_DIR/smartdb" config set-url "$API_URL"
 
     # ── 8. Login (unless --no-login) ─────────────────────────────────────────
     if [ "$NO_LOGIN" = false ]; then
         echo ""
-        bold "  Login to YSR3"
+        bold "  Login to SmartDB"
         echo "  Enter your credentials to authenticate with the API server."
         echo ""
-        "$BIN_DIR/ysr3" login
+        "$BIN_DIR/smartdb" login </dev/tty
         echo ""
     else
         dim "  Skipping login (--no-login flag set)."
@@ -245,7 +245,7 @@ main() {
     # --- Claude Code ---
     local claude_code_config="$HOME/.claude/settings.json"
     if command -v claude &>/dev/null; then
-        read -rp "  Configure MCP for Claude Code? [Y/n] " ans
+        read -rp "  Configure MCP for Claude Code? [Y/n] " ans </dev/tty
         ans="${ans:-Y}"
         if [[ "$ans" =~ ^[Yy]$ ]]; then
             merge_mcp_config "$claude_code_config" "$venv_python" "$server_script"
@@ -257,7 +257,7 @@ main() {
     # --- Claude Desktop (macOS) ---
     local claude_desktop_config="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
     if [[ "$(uname)" == "Darwin" ]] && [ -d "/Applications/Claude.app" ]; then
-        read -rp "  Configure MCP for Claude Desktop? [Y/n] " ans
+        read -rp "  Configure MCP for Claude Desktop? [Y/n] " ans </dev/tty
         ans="${ans:-Y}"
         if [[ "$ans" =~ ^[Yy]$ ]]; then
             merge_mcp_config "$claude_desktop_config" "$venv_python" "$server_script"
@@ -269,7 +269,7 @@ main() {
     # --- Cursor ---
     local cursor_config="$HOME/.cursor/mcp.json"
     if [ -d "$HOME/.cursor" ] || command -v cursor &>/dev/null; then
-        read -rp "  Configure MCP for Cursor? [Y/n] " ans
+        read -rp "  Configure MCP for Cursor? [Y/n] " ans </dev/tty
         ans="${ans:-Y}"
         if [[ "$ans" =~ ^[Yy]$ ]]; then
             merge_mcp_config "$cursor_config" "$venv_python" "$server_script"
@@ -281,7 +281,7 @@ main() {
     if [ "$configured_any" = false ]; then
         dim "  No AI tools detected. You can manually add this MCP config:"
         echo ""
-        echo "    {\"ysr3\": {\"command\": \"$venv_python\", \"args\": [\"$server_script\"]}}"
+        echo "    {\"smartdb\": {\"command\": \"$venv_python\", \"args\": [\"$server_script\"]}}"
         echo ""
     fi
 
@@ -290,7 +290,7 @@ main() {
     green "  ✓ SmartDB Tools installed successfully!"
     echo ""
     echo "  Verify with:"
-    echo "    ysr3 whoami"
+    echo "    smartdb whoami"
     echo ""
     echo "  MCP server files:  $MCP_DIR/"
     echo "  Python venv:       $VENV_DIR/"

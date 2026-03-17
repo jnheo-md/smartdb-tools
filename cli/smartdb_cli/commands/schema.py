@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import typer
 
-from ysr3_cli import api_client
-from ysr3_cli.api_client import APIError
-from ysr3_cli.auth import require_auth
-from ysr3_cli.formatting import (
+from smartdb_cli import api_client
+from smartdb_cli.api_client import APIError
+from smartdb_cli.auth import require_auth
+from smartdb_cli.formatting import (
     console,
     format_number,
     print_error,

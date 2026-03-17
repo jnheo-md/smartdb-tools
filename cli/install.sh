@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-INSTALL_DIR="$HOME/.ysr3"
+INSTALL_DIR="$HOME/.smartdb"
 VENV_DIR="$INSTALL_DIR/venv"
 BIN_DIR="$VENV_DIR/bin"
 MIN_PYTHON_MINOR=10
@@ -77,8 +77,8 @@ path_line() {
 # ── Main ─────────────────────────────────────────────────────────────────────
 main() {
     echo ""
-    bold "  YSR3 CLI Installer"
-    bold "  ==================="
+    bold "  SmartDB CLI Installer"
+    bold "  ====================="
     echo ""
 
     local src_dir
@@ -106,15 +106,15 @@ main() {
 
     "$BIN_DIR/pip" install --quiet --upgrade pip 2>/dev/null
 
-    # ── 3. Install ysr3-cli ──────────────────────────────────────────────────
-    dim "  Installing ysr3-cli ..."
+    # ── 3. Install smartdb-cli ────────────────────────────────────────────────
+    dim "  Installing smartdb-cli ..."
     "$BIN_DIR/pip" install --quiet "$src_dir"
 
-    if ! "$BIN_DIR/ysr3" --version &>/dev/null; then
-        red "  Error: installation succeeded but ysr3 binary not found."
+    if ! "$BIN_DIR/smartdb" --version &>/dev/null; then
+        red "  Error: installation succeeded but smartdb binary not found."
         exit 1
     fi
-    dim "  ysr3-cli installed: $("$BIN_DIR/ysr3" --version 2>&1)"
+    dim "  smartdb-cli installed: $("$BIN_DIR/smartdb" --version 2>&1)"
 
     # ── 4. Add to PATH if needed ─────────────────────────────────────────────
     local rc_file line_to_add
@@ -131,22 +131,22 @@ main() {
             dim "  Backed up $rc_file"
         fi
         echo "" >> "$rc_file"
-        echo "# YSR3 CLI (SmartDB Tools)" >> "$rc_file"
+        echo "# SmartDB CLI (SmartDB Tools)" >> "$rc_file"
         echo "$line_to_add" >> "$rc_file"
         dim "  Added $BIN_DIR to PATH in $rc_file"
     fi
 
     # ── 5. Configure API URL ─────────────────────────────────────────────────
     dim "  Setting API URL to $API_URL ..."
-    "$BIN_DIR/ysr3" config set-url "$API_URL"
+    "$BIN_DIR/smartdb" config set-url "$API_URL"
 
     # ── 6. Login (unless --no-login) ─────────────────────────────────────────
     if [ "$NO_LOGIN" = false ]; then
         echo ""
-        bold "  Login to YSR3"
+        bold "  Login to SmartDB"
         echo "  Enter your credentials to authenticate with the API server."
         echo ""
-        "$BIN_DIR/ysr3" login
+        "$BIN_DIR/smartdb" login
         echo ""
     else
         dim "  Skipping login (--no-login flag set)."
@@ -155,10 +155,10 @@ main() {
 
     # ── Done ─────────────────────────────────────────────────────────────────
     echo ""
-    green "  ✓ ysr3-cli installed successfully!"
+    green "  ✓ smartdb-cli installed successfully!"
     echo ""
     echo "  Verify with:"
-    echo "    ysr3 whoami"
+    echo "    smartdb whoami"
     echo ""
     echo "  To install the MCP server for AI tools (Claude, Cursor, etc.),"
     echo "  see: https://github.com/jnheo-md/smartdb-tools"
