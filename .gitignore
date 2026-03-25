@@ -31,6 +31,9 @@ Thumbs.db
 # Session files
 session.json
 
+# MCP local config
+.mcp.json
+
 # Exports
 *.xlsx
 *.csv

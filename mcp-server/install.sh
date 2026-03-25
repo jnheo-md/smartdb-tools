@@ -108,13 +108,32 @@ main() {
     echo ""
 
     # --- Claude Code ---
-    local claude_code_config="$HOME/.claude/settings.json"
     if command -v claude &>/dev/null; then
         read -rp "  Configure MCP for Claude Code? [Y/n] " ans
         ans="${ans:-Y}"
         if [[ "$ans" =~ ^[Yy]$ ]]; then
-            merge_mcp_config "$claude_code_config" "$venv_python" "$server_script"
-            green "  ✓ Claude Code configured ($claude_code_config)"
+            # Remove stale entry from settings.json left by older installer
+            local claude_settings="$HOME/.claude/settings.json"
+            if [ -f "$claude_settings" ]; then
+                "$venv_python" - "$claude_settings" <<'PYEOF'
+import json, sys, os
+cfg = sys.argv[1]
+with open(cfg) as f:
+    data = json.load(f)
+if "mcpServers" in data:
+    data["mcpServers"].pop("smartdb", None)
+    data["mcpServers"].pop("ysr3", None)
+    if not data["mcpServers"]:
+        del data["mcpServers"]
+    with open(cfg, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+PYEOF
+            fi
+            # Use the official CLI to register globally
+            claude mcp add --scope user --transport stdio smartdb \
+                -- "$venv_python" "$server_script"
+            green "  ✓ Claude Code configured (user scope — available in all projects)"
             configured_any=true
         fi
     fi
