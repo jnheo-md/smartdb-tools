@@ -65,7 +65,7 @@ def _human_size(num_bytes: int | float) -> str:
 @app.command("xlsx")
 def export_xlsx(
     hospital: str = typer.Argument(..., help="Hospital code (e.g. 'YSU')"),
-    vars: str = typer.Option(..., "--vars", "-v", help="Comma-separated variable names (e.g. 'pt_sex,NIHSS_total')"),
+    vars: str = typer.Option(..., "--vars", "-v", help="Comma-separated variable names (e.g. 'pt_sex,admission_NIH_day_0')"),
     filters: str = typer.Option("", "--filters", "-f", help="JSON filter string"),
     filename: str = typer.Option("", "--filename", "-o", help="Output filename (auto-generated if empty)"),
     limit: int = typer.Option(20000, "--limit", "-n", help="Max rows (default 20000)"),

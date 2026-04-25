@@ -193,8 +193,11 @@ main() {
     # ── 5. Copy MCP server files ─────────────────────────────────────────────
     dim "  Copying MCP server files to $MCP_DIR ..."
     mkdir -p "$MCP_DIR"
-    cp "$mcp_source_dir/server.py" "$MCP_DIR/server.py"
-    cp "$mcp_source_dir/api_client.py" "$MCP_DIR/api_client.py"
+    for f in server.py api_client.py variable_safety.py; do
+        if [ -f "$mcp_source_dir/$f" ]; then
+            cp "$mcp_source_dir/$f" "$MCP_DIR/$f"
+        fi
+    done
 
     # ── 6. Add to PATH if needed ─────────────────────────────────────────────
     local rc_file line_to_add
@@ -270,6 +273,21 @@ PYEOF
                 -- "$venv_python" "$server_script"
             green "  ✓ Claude Code configured (user scope — available in all projects)"
             configured_any=true
+
+            # Offer to install Claude Code skills
+            local skills_source="$source_dir/.claude/skills"
+            if [ -d "$skills_source" ]; then
+                read -rp "  Install SmartDB skills for Claude Code? (explore, export workflows) [Y/n] " skills_ans </dev/tty
+                skills_ans="${skills_ans:-Y}"
+                if [[ "$skills_ans" =~ ^[Yy]$ ]]; then
+                    local skills_dest="$HOME/.claude/skills"
+                    mkdir -p "$skills_dest"
+                    for sf in "$skills_source"/smartdb-*.md; do
+                        [ -f "$sf" ] && cp "$sf" "$skills_dest/"
+                    done
+                    green "  ✓ SmartDB skills installed to $skills_dest"
+                fi
+            fi
         fi
     fi
 

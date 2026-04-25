@@ -36,7 +36,7 @@ smartdb schema tables YSU
 smartdb schema search YSU "NIHSS"
 
 # Query patient data
-smartdb query data YSU --vars "pt_sex,pt_age,NIHSS_total" --limit 50
+smartdb query data YSU --vars "pt_sex,pt_age,admission_NIH_day_0" --limit 50
 
 # Get follow-up outcomes (the correct way)
 smartdb query followup YSU --period 3m
@@ -45,9 +45,11 @@ smartdb query followup YSU --period 3m
 smartdb export xlsx YSU --vars "pt_sex,pt_age" --filters '[{"variable":"Thr_mechanical","operator":"=","value":"1"}]'
 ```
 
-## MCP Server (for AI IDEs)
+## AI Integration
 
-The installer automatically configures the MCP server for detected AI tools. To manually configure, add to your MCP settings:
+### MCP-based tools (Claude, Cursor, Windsurf)
+
+The installer auto-configures the MCP server with built-in safety rules, layout-first workflows, and dedicated tools for NIHSS and mRS outcomes. To manually configure, add to your MCP settings:
 
 ```json
 {
@@ -57,6 +59,12 @@ The installer automatically configures the MCP server for detected AI tools. To 
   }
 }
 ```
+
+### CLI-based tools (Codex, Copilot, Aider, etc.)
+
+Any AI agent that can run shell commands on your machine can use the SmartDB CLI directly. See [AGENTS.md](AGENTS.md) for structured instructions that AI agents can follow.
+
+For a comprehensive cross-platform reference, see [docs/SMARTDB_AI_GUIDE.md](docs/SMARTDB_AI_GUIDE.md).
 
 ## Requirements
 

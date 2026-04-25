@@ -181,11 +181,11 @@ This shows the variable type, which table it lives in, and — critically for SE
 python -m smartdb_cli.main query count YSU --filters '[{"variable":"pt_sex","operator":"=","value":"M"}]'
 
 # Query data with specific variables
-python -m smartdb_cli.main query data YSU --vars "pt_sex,pt_age,NIHSS_total" --limit 500
+python -m smartdb_cli.main query data YSU --vars "pt_sex,pt_age,admission_NIH_day_0" --limit 500
 
 # Query with filters
 python -m smartdb_cli.main query data YSU \
-  --vars "pt_sex,pt_age,NIHSS_total,stroke_type" \
+  --vars "pt_sex,pt_age,admission_NIH_day_0,stroke_type" \
   --filters '[{"variable":"pt_sex","operator":"=","value":"M"},{"variable":"pt_age","operator":">","value":"65"}]' \
   --limit 1000
 ```
@@ -195,7 +195,7 @@ python -m smartdb_cli.main query data YSU \
 ```bash
 # Export to Excel
 python -m smartdb_cli.main export xlsx YSU \
-  --vars "pt_sex,pt_age,NIHSS_total,stroke_type,Hypertension_existence" \
+  --vars "pt_sex,pt_age,admission_NIH_day_0,stroke_type,Hypertension_existence" \
   --filename "my_analysis" \
   --limit 20000
 ```
@@ -324,7 +324,7 @@ python -m smartdb_cli.main schema variable YSU pt_sex
 | Argument | Type | Required | Description |
 |----------|------|----------|-------------|
 | `HOSPITAL` | string | Yes | Hospital code or hidx |
-| `VARIABLE` | string | Yes | Exact variable key (e.g., `pt_sex`, `NIHSS_total`) |
+| `VARIABLE` | string | Yes | Exact variable key (e.g., `pt_sex`, `admission_NIH_day_0`) |
 
 **Output**: Panel showing key, column, table, label, type, options. For SELECT/RADIO/CHECKBOX types, also shows a value map table (DB Value → Label).
 
@@ -374,7 +374,7 @@ Query patient data with automatic table JOINs.
 
 ```bash
 python -m smartdb_cli.main query data YSU \
-  --vars "pt_sex,pt_age,NIHSS_total" \
+  --vars "pt_sex,pt_age,admission_NIH_day_0" \
   --filters '[{"variable":"pt_sex","operator":"=","value":"M"}]' \
   --limit 500
 ```
@@ -482,7 +482,7 @@ Export queried data to an XLSX file.
 
 ```bash
 python -m smartdb_cli.main export xlsx YSU \
-  --vars "pt_sex,pt_age,NIHSS_total,stroke_type" \
+  --vars "pt_sex,pt_age,admission_NIH_day_0,stroke_type" \
   --filename "stroke_analysis" \
   --limit 20000
 ```
@@ -567,8 +567,8 @@ Filters are JSON strings passed to `--filters` / `-f`. They can be a single obje
 | `!=` | string/number | `{"variable":"pt_sex","operator":"!=","value":"F"}` |
 | `>` | number | `{"variable":"pt_age","operator":">","value":"65"}` |
 | `<` | number | `{"variable":"pt_age","operator":"<","value":"50"}` |
-| `>=` | number | `{"variable":"NIHSS_total","operator":">=","value":"15"}` |
-| `<=` | number | `{"variable":"NIHSS_total","operator":"<=","value":"5"}` |
+| `>=` | number | `{"variable":"admission_NIH_day_0","operator":">=","value":"15"}` |
+| `<=` | number | `{"variable":"admission_NIH_day_0","operator":"<=","value":"5"}` |
 | `LIKE` | string | `{"variable":"diagnosis","operator":"LIKE","value":"%infarct%"}` |
 | `IN` | array | `{"variable":"stroke_type","operator":"IN","value":["LAA","CE"]}` |
 | `NOT IN` | array | `{"variable":"stroke_type","operator":"NOT IN","value":["UND"]}` |
@@ -627,7 +627,7 @@ Not all hospitals use the same tables. The main ones:
 
 ### Variable naming
 
-Variables have machine-readable keys (e.g., `pt_sex`, `NIHSS_total`, `Hypertension_existence`) and Korean/English labels. Use `schema search` to find variables by keyword, then `schema variable` to get exact details.
+Variables have machine-readable keys (e.g., `pt_sex`, `admission_NIH_day_0`, `Hypertension_existence`) and Korean/English labels. Use `schema search` to find variables by keyword, then `schema variable` to get exact details.
 
 ### Value mappings (CRITICAL)
 
@@ -667,7 +667,7 @@ python -m smartdb_cli.main schema variable YSU stroke_type
 
 # Query by subtype
 python -m smartdb_cli.main query data YSU \
-  --vars "stroke_type,pt_age,pt_sex,NIHSS_total" \
+  --vars "stroke_type,pt_age,pt_sex,admission_NIH_day_0" \
   --filters '[{"variable":"stroke_type","operator":"=","value":"LAA"}]' \
   --limit 5000
 ```
@@ -676,7 +676,7 @@ python -m smartdb_cli.main query data YSU \
 
 ```bash
 # 3-month mRS with death imputation
-python -m smartdb_cli.main query followup YSU --period 3m --vars "pt_age,pt_sex,NIHSS_total"
+python -m smartdb_cli.main query followup YSU --period 3m --vars "pt_age,pt_sex,admission_NIH_day_0"
 
 # 1-year mRS
 python -m smartdb_cli.main query followup YSU --period 12m --vars "stroke_type"
@@ -734,7 +734,7 @@ python -m smartdb_cli.main query sql "
 ```bash
 # Export full dataset
 python -m smartdb_cli.main export xlsx YSU \
-  --vars "pt_sex,pt_age,NIHSS_total,stroke_type,Hypertension_existence,DM_existence" \
+  --vars "pt_sex,pt_age,admission_NIH_day_0,stroke_type,Hypertension_existence,DM_existence" \
   --filename "full_cohort" \
   --limit 50000
 

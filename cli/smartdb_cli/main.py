@@ -167,7 +167,7 @@ def update() -> None:
         with console.status("[bold cyan]Updating MCP server files…"):
             MCP_DIR.mkdir(parents=True, exist_ok=True)
             src_mcp = Path(repo_dir) / "mcp-server"
-            for filename in ("server.py", "api_client.py"):
+            for filename in ("server.py", "api_client.py", "variable_safety.py"):
                 src = src_mcp / filename
                 if src.exists():
                     shutil.copy2(src, MCP_DIR / filename)
@@ -290,32 +290,48 @@ SmartDB CLI — Domain Guide for AI Agents
 
 READ THIS BEFORE querying outcome data. These rules prevent common mistakes.
 
-## 1. Patient Outcomes (mRS) — USE 'query followup', NOT 'query data'
+## 1. Patient Outcomes (mRS) — ALWAYS USE 'query followup'
 
-The registry stores mRS outcomes in TWO places:
-  - db_11 (Admission table): 'admission_mrs_3month' — a quick-note field,
-    NOT the authoritative outcome. Often incomplete or inconsistent.
-  - db_5 (Cohort table): 'mRS_calculated' — the CORRECT outcome variable,
-    computed from structured follow-up assessments.
+ALWAYS use 'smartdb query followup' or 'smartdb export followup' for mRS
+outcomes at ALL hospitals. These commands handle hospital differences
+automatically:
+  - YSU: queries the cohort table (db_5) with mRS_calculated + death imputation
+  - Other hospitals: falls back to secret_mrs_3month automatically
 
-ALWAYS use 'smartdb query followup' or 'smartdb export followup' for mRS outcomes.
-These commands:
-  - Pull mRS from the cohort table (db_5) using 'mRS_calculated'
-  - Filter by follow-up period (3m, 6m, 12m, 2y, etc.) via checkbox columns
-  - Impute mRS=6 for patients who died before the period (death imputation)
-  - Track data source ('cohort' vs 'imputed_death') for transparency
+NEVER query admission_mrs_3month or secret_mrs_3month directly via 'query data'.
+  - admission_mrs_3month is empty at most hospitals
+  - get_followup_mrs() / 'query followup' already uses the correct source
 
-NEVER use 'query data' with 'admission_mrs_3month' or similar db_11 variables
-for outcome analysis.
+Note: discharge mRS ('mRS' in db_11) and pre-stroke mRS ('prestroke_mRS')
+are fine to query directly — those are not follow-up outcomes.
 
-## 2. Follow-up Periods
+## 2. NIHSS Scores — LAYOUT-FIRST, NOT 'NIHSS_total_*'
+
+Different hospitals collect NIHSS differently:
+  - Some enter 15 individual sub-items (Q1a through Q11) -> auto-calculated totals
+  - Most enter just the total score directly -> stored in admission_NIH_day_0/1/dc
+
+DANGEROUS (CALCULATED, produce false zeros):
+  NIHSS_total_day_0, NIHSS_total_day_1, NIHSS_total_day_3,
+  NIHSS_total_day_7, NIHSS_total_day_14, NIHSS_total_dc
+
+CORRECT (raw, NULL when not recorded):
+  admission_NIH_day_0, admission_NIH_day_1, admission_NIH_day_dc
+  NIH_before_EVT, secret_nih_after_tPA
+
+ALWAYS check the hospital's form layout first to see which NIHSS
+variables they use. For the MCP server, use get_nihss_scores().
+
+NOTE: 'NIHSS_total' does NOT exist as a variable.
+
+## 3. Follow-up Periods
 
 Available: 3m, 6m, 9m, 12m, 2y, 3y, 4y, 5y, 6y, 7y, 8y, 9y, 10y
 
 Each period corresponds to a checkbox column in db_5 (e.g., threefu_cohort).
 A single patient can have multiple cohort rows (one per follow-up visit).
 
-## 3. Filtering by Treatment / Subgroup
+## 4. Filtering by Treatment / Subgroup
 
 Use --filters with 'query followup' or 'export followup' to select subgroups:
 
@@ -329,7 +345,7 @@ Use --filters with 'query followup' or 'export followup' to select subgroups:
 
 Filters are applied to both the cohort query and the death imputation query.
 
-## 4. Key Date Variables
+## 5. Key Date Variables
 
 When filtering patients by time period, use these date variables:
   - 'adm_date' (db_11): Admission date (입원일자) — USE THIS for selecting
@@ -343,26 +359,26 @@ When filtering patients by time period, use these date variables:
 Example: patients admitted from June 2024:
   -f '[{"variable":"adm_date","operator":">=","value":"2024-06-01"}]'
 
-## 5. Variable Value Encoding
+## 6. Variable Value Encoding
 
 SELECT/CHECKBOX variables store coded values, NOT labels:
   - Thr_mechanical: 1 = Yes, 0 = No  (NOT "Yes"/"No")
   - pt_sex: M / F
   - Use 'smartdb schema variable <hospital> <var>' to see the value map.
 
-## 6. Hospital Codes
+## 7. Hospital Codes
 
 Use hospital code (e.g., 'YSU') or hidx number (e.g., '1').
 Run 'smartdb schema hospitals' to see all available hospitals.
 Not all hospitals have the same tables or variables.
 
-## 7. Table Hierarchy
+## 8. Table Hierarchy
 
 Tables are hierarchical: db_1 (Patient) -> db_11 (Admission) -> db_12 (Treatment).
 'query data' automatically JOINs across tables when you request variables from
 different tables. No manual JOIN needed.
 
-## 8. Exporting Data
+## 9. Exporting Data
 
   - 'export xlsx': Export raw variable data to XLSX
   - 'export followup': Export cohort-based mRS outcomes to XLSX (PREFERRED for outcomes)

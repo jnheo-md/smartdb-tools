@@ -29,30 +29,44 @@ mcp = FastMCP(
         "You have access to the SmartDB Registry database containing clinical data "
         "for ~16,000+ stroke patients across 27 Korean hospitals. The registry has ~3,000 "
         "variables covering demographics, risk factors, imaging, labs, treatment, and outcomes.\n\n"
-        "VARIABLE DISCOVERY — ALWAYS browse by section, never guess:\n"
+        "VARIABLE DISCOVERY — LAYOUT-FIRST approach (MANDATORY):\n"
         "1. list_hospitals() → see available hospitals\n"
-        "2. list_tables(hospital) → see tables with descriptions and variable counts\n"
-        "3. get_table_variables(hospital, table) → shows SECTIONS (clinical categories) "
-        "with variable counts — like a table of contents\n"
-        "4. get_section_variables(hospital, table, section_number) → shows the actual "
-        "variables in that section with labels and types. PRESENT these to the user "
-        "so they can pick what they need.\n"
-        "5. get_variable_info(hospital, var) → check value encoding before filtering\n"
-        "6. search_variables() → ONLY use when the user asks for a specific concept "
-        "and you need to find which table/variable holds it. Do NOT use this to "
-        "discover variables — use the section browsing flow instead.\n\n"
+        "2. list_tables(hospital) → see tables\n"
+        "3. get_layout_fields(hospital, table) → see ALL variables the hospital actually collects\n"
+        "   THIS IS THE GROUND TRUTH. Different hospitals have different forms and variables.\n"
+        "4. Select variables FROM the layout results for your query\n"
+        "5. query_data() or export_xlsx() with those variables\n"
+        "NEVER query variables without first checking the layout. Hospitals customize their forms.\n\n"
+        "For deeper exploration, you can also use:\n"
+        "- get_table_variables(hospital, table) → section overview with variable counts\n"
+        "- get_section_variables(hospital, table, section) → variables in a specific section\n"
+        "- get_variable_info(hospital, var) → check value encoding before filtering\n"
+        "- search_variables() → find which table/variable holds a specific concept\n\n"
         "NEVER guess variable names. ALWAYS show the user what sections and variables "
         "exist first, then let them choose.\n\n"
         "The main hospital is YSU (Yonsei Severance Hospital) with the richest data.\n"
         "Key tables: db_1 (Patient demographics), db_11 (Admission - main clinical data), "
         "db_12 (Thrombolysis/Treatment), db_5 (Cohort follow-up), db_19 (Stent procedures).\n\n"
         "IMPORTANT RULES:\n"
-        "- For mRS outcomes, ALWAYS use get_followup_mrs() — it queries the cohort table "
-        "(db_5, mRS_calculated) with death imputation. NEVER use query_data() with "
-        "admission_mrs_3month or similar db_11 variables for outcomes.\n"
+        "- For mRS outcomes, ALWAYS use get_followup_mrs() for ALL hospitals.\n"
+        "  It automatically uses the cohort table (db_5) for YSU, and falls back to\n"
+        "  secret_mrs_3month for other hospitals. NEVER use query_data() with\n"
+        "  admission_mrs_3month or secret_mrs_3month directly.\n"
+        "- For NIHSS scores, ALWAYS use get_nihss_scores() — it returns correct raw totals.\n"
+        "  NEVER use NIHSS_total_day_0, NIHSS_total_day_1, NIHSS_total_dc or any NIHSS_total_*\n"
+        "  CALCULATED variable — these produce false zeros via IFNULL when sub-items aren't entered.\n"
+        "  Note: 'NIHSS_total' does NOT exist as a variable.\n"
         "- For filtering by date, use 'adm_date' (admission date), NOT 'onset_hospital_arrival'.\n"
         "- SELECT/CHECKBOX variables store coded values: Thr_mechanical=1 means Yes, 0 means No.\n"
-        "- Use get_variable_info() to check value encoding before filtering."
+        "- Use get_variable_info() to check value encoding before filtering.\n\n"
+        "RECOMMENDED WORKFLOWS:\n"
+        "1. EXPLORE: list_hospitals() → list_tables() → get_layout_fields() → "
+        "get_section_variables() → present variables to user → let them choose.\n"
+        "2. EXPORT: explore first (above) → select variables from layout → "
+        "validate with get_variable_info() → export_xlsx() or export_followup_xlsx().\n"
+        "3. NIHSS: use get_nihss_scores() directly — never query NIHSS variables manually.\n"
+        "4. mRS OUTCOMES: use get_followup_mrs() directly — never query mRS variables manually.\n"
+        "Always explore before querying. Never skip the layout check."
     ),
 )
 
@@ -181,6 +195,13 @@ async def get_variable_info(hospital_code: str, variable_name: str) -> str:
         lines.append("  Value Map:")
         for db_val, label in result["value_map"].items():
             lines.append(f"    {db_val} = {label}")
+
+    type_label = result.get("type_label", "")
+    if type_label == "CALCULATED" and "IFNULL" in result.get("options", ""):
+        lines.append("")
+        lines.append("  !! WARNING: This CALCULATED field uses IFNULL, which produces false zeros")
+        lines.append("     when sub-items are not entered. Check if a raw alternative exists.")
+
     return "\n".join(lines)
 
 
@@ -331,6 +352,186 @@ async def describe_registry(hospital_code: str) -> str:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Layout & Safety Tools
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+@mcp.tool()
+async def get_layout_fields(hospital_code: str, table_name: str) -> str:
+    """Get ALL variables that a hospital actually collects in their form for a table.
+
+    THIS IS THE GROUND TRUTH for what data a hospital has. Different hospitals
+    use different forms with different variables. ALWAYS check this BEFORE
+    using query_data() or export_xlsx() to ensure you're querying variables
+    that actually exist for this hospital.
+
+    The result shows variables organized by form section, plus a flat list
+    you can use directly in query_data().
+
+    Args:
+        hospital_code: Hospital code (e.g., 'YSU', 'EWU')
+        table_name: Table name (e.g., 'db_11', 'db_29')
+    """
+    _require_auth()
+
+    # Get section list from form_layout
+    try:
+        sections = api_client.get(f"/schema/sections/{hospital_code}/{table_name}")
+    except api_client.APIError:
+        sections = []
+
+    if not sections:
+        return (
+            f"No form layout found for {table_name} in {hospital_code}. "
+            f"This table may not exist or may not have a form layout defined. "
+            f"Try list_tables({hospital_code}) to see available tables."
+        )
+
+    # Collect unique section orders
+    section_orders = sorted(set(s["section_order"] for s in sections))
+
+    all_variables: list[str] = []
+    section_lines: list[str] = []
+
+    for order in section_orders:
+        try:
+            result = api_client.get(
+                f"/schema/section-vars/{hospital_code}/{table_name}/{order}"
+            )
+        except api_client.APIError:
+            continue
+
+        section_title = result.get("section_title", f"Section {order}")
+        subsections = result.get("subsections", [])
+
+        section_var_keys: list[str] = []
+        for sub in subsections:
+            for v in sub.get("variables", []):
+                key = v["key"]
+                if key not in all_variables:
+                    all_variables.append(key)
+                    section_var_keys.append(key)
+
+        if section_var_keys:
+            section_lines.append(
+                f"  Section {order}. {section_title} ({len(section_var_keys)} vars)"
+            )
+
+    lines = [
+        f"Layout fields for {table_name} ({hospital_code}) — {len(all_variables)} variables",
+        "",
+        "Per-section breakdown:",
+    ]
+    lines.extend(section_lines)
+    lines.append("")
+    lines.append(f"All variable keys ({len(all_variables)}):")
+
+    # Show in chunks of 8 per line for readability
+    for i in range(0, len(all_variables), 8):
+        chunk = all_variables[i : i + 8]
+        lines.append(f"  {', '.join(chunk)}")
+
+    lines.append("")
+    lines.append("Use these variable names in query_data() or export_xlsx().")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+async def get_nihss_scores(
+    hospital_code: str,
+    timepoints: list[str] | None = None,
+    additional_variables: list[str] | None = None,
+    filters: str = "",
+    limit: int = 5000,
+) -> str:
+    """Get NIHSS scores using the CORRECT raw variables.
+
+    DO NOT use query_data() with NIHSS_total_* variables — those are CALCULATED
+    fields that produce false zeros via IFNULL when sub-items aren't entered.
+
+    Available timepoints: day0, day1, dc, before_evt, after_tpa
+    Default: day0, day1, dc
+
+    Args:
+        hospital_code: Hospital code (e.g., 'YSU')
+        timepoints: List of timepoint codes (default: ['day0', 'day1', 'dc'])
+        additional_variables: Extra variables to include (e.g., ['pt_sex', 'pt_age'])
+        filters: JSON string of filters (same format as query_data)
+        limit: Max rows (default 5000)
+    """
+    _require_auth()
+
+    timepoint_map = {
+        "day0": ("admission_NIH_day_0", "NIHSS Day 0"),
+        "day1": ("admission_NIH_day_1", "NIHSS Day 1"),
+        "dc": ("admission_NIH_day_dc", "NIHSS at Discharge"),
+        "before_evt": ("NIH_before_EVT", "NIHSS before EVT"),
+        "after_tpa": ("secret_nih_after_tPA", "NIHSS after tPA"),
+    }
+
+    if timepoints is None:
+        timepoints = ["day0", "day1", "dc"]
+
+    # Validate timepoints
+    invalid = [t for t in timepoints if t not in timepoint_map]
+    if invalid:
+        return (
+            f"Invalid timepoint(s): {', '.join(invalid)}. "
+            f"Available: {', '.join(timepoint_map.keys())}"
+        )
+
+    # Build variable list
+    nihss_vars = []
+    labels = []
+    for tp in timepoints:
+        var_name, label = timepoint_map[tp]
+        nihss_vars.append(var_name)
+        labels.append(label)
+
+    query_vars = list(additional_variables or []) + nihss_vars
+
+    filter_list = _parse_filters(filters)
+    body = {
+        "hospital": hospital_code,
+        "variables": query_vars,
+        "filters": filter_list,
+        "limit": max(1, min(limit, 5000)),
+    }
+    result = api_client.post("/query/data", json_body=body)
+
+    columns = result["columns"]
+    rows = result["rows"]
+    summary = result.get("summary", {})
+
+    lines = [
+        f"NIHSS Scores (raw variables — correct, no false zeros)",
+        f"Hospital: {result.get('hospital', hospital_code)} (hidx={result.get('hidx', '')})",
+        f"Timepoints: {', '.join(labels)}",
+        f"Variables used: {', '.join(nihss_vars)}",
+        f"Rows: {result['row_count']} (limit: {result['limit']})",
+        "",
+        _format_table(rows, columns),
+    ]
+
+    if summary:
+        lines.append("\n--- NIHSS Summary ---")
+        for var_name in nihss_vars:
+            if var_name in summary:
+                stats = summary[var_name]
+                if stats.get("type") == "numeric":
+                    lines.append(
+                        f"  {var_name}: n={stats['n']}, mean={stats['mean']:.1f}, "
+                        f"median={stats['median']:.1f}, min={stats['min']}, max={stats['max']}"
+                    )
+                elif stats.get("type") == "categorical":
+                    lines.append(
+                        f"  {var_name}: n={stats['n']}, nulls={stats['nulls']}"
+                    )
+
+    return "\n".join(lines)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Query Tools
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -361,6 +562,11 @@ async def query_data(
     """
     _require_auth()
     filter_list = _parse_filters(filters)
+
+    # Check for dangerous variables
+    import variable_safety
+    warnings = variable_safety.check_dangerous_variables(variables, hospital_code)
+
     body = {
         "hospital": hospital_code,
         "variables": variables,
@@ -372,13 +578,25 @@ async def query_data(
     rows = result["rows"]
     summary = result.get("summary", {})
 
-    lines = [
+    lines = []
+
+    if warnings:
+        lines.append("!! VARIABLE SAFETY WARNINGS:")
+        for w in warnings:
+            lines.append(f"  '{w['variable']}': {w['reason']}")
+            if w.get("safe"):
+                lines.append(f"    -> Use '{w['safe']}' instead, or use {w['tool']}")
+            elif w.get("tool"):
+                lines.append(f"    -> Use {w['tool']} for safe NIHSS access")
+        lines.append("")
+
+    lines.extend([
         f"Hospital: {result.get('hospital', hospital_code)} (hidx={result.get('hidx', '')})",
         f"Variables: {', '.join(variables)}",
         f"Rows: {result['row_count']} (limit: {result['limit']})",
         "",
         _format_table(rows, columns),
-    ]
+    ])
 
     if summary:
         lines.append("\n--- Summary ---")
@@ -488,12 +706,13 @@ async def get_followup_mrs(
 ) -> str:
     """Get mRS scores at a specific follow-up period for stroke patients.
 
-    THIS IS THE CORRECT TOOL for mRS outcome data. It queries the cohort table
-    (db_5, mRS_calculated) with death imputation (mRS=6 for patients who died
-    before the follow-up period but have no cohort row).
+    THIS IS THE CORRECT TOOL for mRS outcome data at ALL hospitals.
+    It automatically handles hospital differences:
+      - YSU: queries the cohort table (db_5, mRS_calculated) with death imputation
+      - Other hospitals: falls back to secret_mrs_3month
 
-    DO NOT use query_data() with 'admission_mrs_3month' — that is a quick-note
-    field, NOT the authoritative outcome.
+    DO NOT use query_data() with 'admission_mrs_3month' or 'secret_mrs_3month'
+    directly — use this tool instead.
 
     Available periods: 3m, 6m, 9m, 12m, 2y, 3y, 4y, 5y, 6y, 7y, 8y, 9y, 10y
 
@@ -590,6 +809,11 @@ async def export_xlsx(
     """
     _require_auth()
     filter_list = _parse_filters(filters)
+
+    # Check for dangerous variables
+    import variable_safety
+    warnings = variable_safety.check_dangerous_variables(variables, hospital_code)
+
     body = {
         "hospital": hospital_code,
         "variables": variables,
@@ -605,13 +829,28 @@ async def export_xlsx(
     with open(save_path, "wb") as f:
         f.write(content)
     size_kb = len(content) / 1024
-    return (
-        f"Export complete!\n"
-        f"  File: {save_path}\n"
-        f"  Size: {size_kb:.1f} KB\n"
-        f"  Hospital: {hospital_code}\n"
-        f"  Variables: {', '.join(variables)}"
-    )
+
+    lines = []
+
+    if warnings:
+        lines.append("!! VARIABLE SAFETY WARNINGS:")
+        for w in warnings:
+            lines.append(f"  '{w['variable']}': {w['reason']}")
+            if w.get("safe"):
+                lines.append(f"    -> Use '{w['safe']}' instead, or use {w['tool']}")
+            elif w.get("tool"):
+                lines.append(f"    -> Use {w['tool']} for safe NIHSS access")
+        lines.append("")
+
+    lines.extend([
+        "Export complete!",
+        f"  File: {save_path}",
+        f"  Size: {size_kb:.1f} KB",
+        f"  Hospital: {hospital_code}",
+        f"  Variables: {', '.join(variables)}",
+    ])
+
+    return "\n".join(lines)
 
 
 @mcp.tool()

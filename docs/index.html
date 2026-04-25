@@ -209,8 +209,8 @@ smartdb whoami</code>
         <div class="code-block">
           <code>smartdb schema hospitals
 smartdb schema search YSU "blood pressure"
-smartdb schema variable YSU NIHSS_total</code>
-          <button class="copy-btn" data-code="smartdb schema hospitals&#10;smartdb schema search YSU &quot;blood pressure&quot;&#10;smartdb schema variable YSU NIHSS_total" aria-label="Copy schema commands">
+smartdb schema variable YSU admission_NIH_day_0</code>
+          <button class="copy-btn" data-code="smartdb schema hospitals&#10;smartdb schema search YSU &quot;blood pressure&quot;&#10;smartdb schema variable YSU admission_NIH_day_0" aria-label="Copy schema commands">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -221,9 +221,9 @@ smartdb schema variable YSU NIHSS_total</code>
         <p>Query patient data with automatic table joins. Filter by any variable with support for complex conditions.</p>
         <div class="code-block">
           <code>smartdb query data YSU \
-  --vars "pt_sex,pt_age,NIHSS_total" \
+  --vars "pt_sex,pt_age,admission_NIH_day_0" \
   --filters '[{"variable":"Thr_mechanical","operator":"=","value":"1"}]'</code>
-          <button class="copy-btn" data-code="smartdb query data YSU --vars &quot;pt_sex,pt_age,NIHSS_total&quot; --filters '[{&quot;variable&quot;:&quot;Thr_mechanical&quot;,&quot;operator&quot;:&quot;=&quot;,&quot;value&quot;:&quot;1&quot;}]'" aria-label="Copy query command">
+          <button class="copy-btn" data-code="smartdb query data YSU --vars &quot;pt_sex,pt_age,admission_NIH_day_0&quot; --filters '[{&quot;variable&quot;:&quot;Thr_mechanical&quot;,&quot;operator&quot;:&quot;=&quot;,&quot;value&quot;:&quot;1&quot;}]'" aria-label="Copy query command">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -257,9 +257,9 @@ smartdb clot composition YSU YSU001</code>
         <h3>Data Export</h3>
         <p>Export filtered datasets to XLSX for downstream analysis.</p>
         <div class="code-block">
-          <code>smartdb export data YSU --vars "pt_sex,pt_age,NIHSS_total"
+          <code>smartdb export data YSU --vars "pt_sex,pt_age,admission_NIH_day_0"
 smartdb export followup YSU -p 3m -v "pt_sex,pt_age"</code>
-          <button class="copy-btn" data-code="smartdb export data YSU --vars &quot;pt_sex,pt_age,NIHSS_total&quot;&#10;smartdb export followup YSU -p 3m -v &quot;pt_sex,pt_age&quot;" aria-label="Copy export commands">
+          <button class="copy-btn" data-code="smartdb export data YSU --vars &quot;pt_sex,pt_age,admission_NIH_day_0&quot;&#10;smartdb export followup YSU -p 3m -v &quot;pt_sex,pt_age&quot;" aria-label="Copy export commands">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -271,7 +271,7 @@ smartdb export followup YSU -p 3m -v "pt_sex,pt_age"</code>
   <section id="environments" aria-label="Supported environments">
     <div class="container">
       <h2 class="section-title">Supported Environments</h2>
-      <p class="section-description">SmartDB Tools can be used directly in the terminal or integrated with AI-assisted environments via the Model Context Protocol (MCP).</p>
+      <p class="section-description">SmartDB Tools can be used directly in the terminal, integrated via MCP, or accessed by any AI agent that can run shell commands.</p>
 
       <div class="env-table-wrap">
         <table class="env-table">
@@ -279,7 +279,7 @@ smartdb export followup YSU -p 3m -v "pt_sex,pt_age"</code>
             <tr>
               <th>Environment</th>
               <th>Interface</th>
-              <th>Notes</th>
+              <th>Setup</th>
             </tr>
           </thead>
           <tbody>
@@ -290,25 +290,38 @@ smartdb export followup YSU -p 3m -v "pt_sex,pt_age"</code>
             </tr>
             <tr>
               <td>Claude Code</td>
-              <td>MCP</td>
-              <td>Integration with Claude's CLI agent</td>
+              <td>MCP + CLI</td>
+              <td>Auto-configured during install. MCP provides tools and safety warnings. Optional skills available.</td>
             </tr>
             <tr>
               <td>Claude Desktop</td>
               <td>MCP</td>
-              <td>Desktop application integration via MCP config</td>
+              <td>Auto-configured during install via MCP config</td>
             </tr>
             <tr>
-              <td>Cursor</td>
+              <td>Cursor / Windsurf</td>
               <td>MCP</td>
-              <td>IDE integration for AI-assisted queries</td>
+              <td>Auto-configured during install via MCP config</td>
+            </tr>
+            <tr>
+              <td>Codex (VS Code)</td>
+              <td>CLI</td>
+              <td>Uses the CLI directly via terminal. Reads <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> for instructions.</td>
+            </tr>
+            <tr>
+              <td>Copilot / Aider / Other</td>
+              <td>CLI</td>
+              <td>Any local AI agent that can run shell commands. Run <code>smartdb guide</code> first.</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div class="env-note">
-        <p>For MCP configuration details, refer to the <a href="https://github.com/jnheo-md/smartdb-tools#mcp-server" target="_blank" rel="noopener noreferrer">MCP setup documentation</a> in the repository.</p>
+      <div class="install-section">
+        <h3>AI Agent Setup</h3>
+        <p><strong>MCP-based tools</strong> (Claude, Cursor, Windsurf): The installer auto-configures the MCP server with built-in safety rules, layout-first workflows, and dedicated tools for NIHSS and mRS outcomes.</p>
+        <p><strong>CLI-based tools</strong> (Codex, Copilot, Aider): Install the CLI, then the AI agent can run <code>smartdb guide</code> to learn the domain rules and use any <code>smartdb</code> command. An <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> file in the repository provides structured instructions for AI agents.</p>
+        <p>For the full cross-platform AI reference, see <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/docs/SMARTDB_AI_GUIDE.md" target="_blank" rel="noopener noreferrer">SMARTDB_AI_GUIDE.md</a>.</p>
       </div>
     </div>
   </section>
