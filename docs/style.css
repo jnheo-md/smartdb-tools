@@ -338,6 +338,7 @@ section:first-of-type {
   font-family: inherit;
   font-size: inherit;
   color: inherit;
+  white-space: pre;
 }
 
 .copy-btn {
