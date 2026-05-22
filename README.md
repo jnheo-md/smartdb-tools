@@ -4,8 +4,14 @@ CLI and MCP server for the **SmartDB Stroke Registry** — query 16,000+ stroke 
 
 ## Quick Install
 
+**macOS / Linux:**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.ps1 | iex
 ```
 
 ## What's Included
@@ -51,11 +57,22 @@ smartdb export xlsx YSU --vars "pt_sex,pt_age" --filters '[{"variable":"Thr_mech
 
 The installer auto-configures the MCP server with built-in safety rules, layout-first workflows, and dedicated tools for NIHSS and mRS outcomes. To manually configure, add to your MCP settings:
 
+macOS/Linux:
 ```json
 {
   "smartdb": {
     "command": "~/.smartdb/venv/bin/python",
     "args": ["~/.smartdb/mcp-server/server.py"]
+  }
+}
+```
+
+Windows:
+```json
+{
+  "smartdb": {
+    "command": "%USERPROFILE%\\.smartdb\\venv\\Scripts\\python.exe",
+    "args": ["%USERPROFILE%\\.smartdb\\mcp-server\\server.py"]
   }
 }
 ```
@@ -69,13 +86,13 @@ For a comprehensive cross-platform reference, see [docs/SMARTDB_AI_GUIDE.md](doc
 ## Requirements
 
 - Python 3.10+
-- macOS or Linux
+- macOS, Linux, or Windows 10/11
 - SmartDB registry account (contact your hospital administrator)
 
 ## Security
 
 - All communication over HTTPS — no direct database access
-- JWT tokens with 24-hour expiry, stored with `0600` permissions
+- JWT tokens stored with restricted file permissions (`0600` on macOS/Linux)
 - Role-based access control enforced server-side
 - See [SECURITY.md](SECURITY.md) for details
 

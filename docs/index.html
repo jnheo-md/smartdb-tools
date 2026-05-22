@@ -68,8 +68,16 @@
 
       <div class="header-install">
         <div class="code-block">
-          <code>curl -fsSL https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.sh | bash</code>
-          <button class="copy-btn" data-code="curl -fsSL https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.sh | bash" aria-label="Copy install command">
+          <code><span class="terminal-label">macOS / Linux</span>
+curl -fsSL https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.sh | bash</code>
+          <button class="copy-btn" data-code="curl -fsSL https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.sh | bash" aria-label="Copy install command for macOS/Linux">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+        <div class="code-block" style="margin-top: 0.75rem;">
+          <code><span class="terminal-label">Windows (PowerShell)</span>
+irm https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.ps1 | iex</code>
+          <button class="copy-btn" data-code="irm https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.ps1 | iex" aria-label="Copy install command for Windows">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -168,7 +176,7 @@ Hospital: YSU | Total patients: 2,847
         <h3>Prerequisites</h3>
         <ul class="prereq-list">
           <li>Python 3.10 or later</li>
-          <li>macOS or Linux</li>
+          <li>macOS, Linux, or Windows 10/11</li>
           <li>Authorized SmartDB registry account</li>
         </ul>
       </div>
@@ -176,9 +184,17 @@ Hospital: YSU | Total patients: 2,847
       <div class="install-section">
         <h3>Quick Install</h3>
         <p>Run the installer script to set up SmartDB Tools and its dependencies:</p>
+        <p><strong>macOS / Linux:</strong></p>
         <div class="code-block">
           <code>curl -fsSL https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.sh | bash</code>
-          <button class="copy-btn" data-code="curl -fsSL https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.sh | bash" aria-label="Copy install command">
+          <button class="copy-btn" data-code="curl -fsSL https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.sh | bash" aria-label="Copy install command for macOS/Linux">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+        <p style="margin-top: 1rem;"><strong>Windows (PowerShell):</strong></p>
+        <div class="code-block">
+          <code>irm https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.ps1 | iex</code>
+          <button class="copy-btn" data-code="irm https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.ps1 | iex" aria-label="Copy install command for Windows">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -335,7 +351,7 @@ smartdb export followup YSU -p 3m -v "pt_sex,pt_age"</code>
         <ul class="security-list">
           <li><strong>HTTPS-only API access</strong> &mdash; all data transmission is encrypted in transit. No direct database connections.</li>
           <li><strong>Role-based authorization</strong> &mdash; server-side permission enforcement limits data access to the user's authorized scope and institutional affiliation.</li>
-          <li><strong>Encrypted session storage</strong> &mdash; JWT tokens are stored with restricted file permissions (0600) and expire automatically after 24 hours.</li>
+          <li><strong>Encrypted session storage</strong> &mdash; JWT tokens are stored with restricted file permissions (0600 on macOS/Linux) and expire automatically.</li>
         </ul>
         <p class="security-link">See <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/SECURITY.md" target="_blank" rel="noopener noreferrer">SECURITY.md</a> for the full security policy.</p>
       </div>
