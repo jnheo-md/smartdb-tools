@@ -59,6 +59,14 @@ mcp = FastMCP(
         "- For filtering by date, use 'adm_date' (admission date), NOT 'onset_hospital_arrival'.\n"
         "- SELECT/CHECKBOX variables store coded values: Thr_mechanical=1 means Yes, 0 means No.\n"
         "- Use get_variable_info() to check value encoding before filtering.\n\n"
+        "ANONYMIZATION:\n"
+        "Some tables use anonymization — patient identity (chart number, name) is stored\n"
+        "in a separate table, not in the data tables. Records use 'reg_num' instead.\n"
+        "- list_anonymized_tables(hospital) → check which tables are anonymized\n"
+        "- lookup_patient(hospital, query) → find a patient by chart#, name, or reg_num\n"
+        "- query_data(..., include_patient_id=True) → include chart# and name in results\n"
+        "- export_xlsx(..., include_patient_id=True) → create companion CSV with patient IDs\n"
+        "include_patient_id works for any user with access to the hospital.\n\n"
         "RECOMMENDED WORKFLOWS:\n"
         "1. EXPLORE: list_hospitals() → list_tables() → get_layout_fields() → "
         "get_section_variables() → present variables to user → let them choose.\n"
@@ -66,6 +74,8 @@ mcp = FastMCP(
         "validate with get_variable_info() → export_xlsx() or export_followup_xlsx().\n"
         "3. NIHSS: use get_nihss_scores() directly — never query NIHSS variables manually.\n"
         "4. mRS OUTCOMES: use get_followup_mrs() directly — never query mRS variables manually.\n"
+        "5. PATIENT ID: use include_patient_id=True in query_data/export_xlsx, or\n"
+        "   lookup_patient() for individual searches.\n"
         "Always explore before querying. Never skip the layout check."
     ),
 )
@@ -83,6 +93,43 @@ def _require_auth() -> None:
             "then restart this MCP server.",
             status_code=401,
         )
+
+
+def _fetch_anon_mapping(
+    hospital_code: str, hidx: int, patient_ids: list[int],
+) -> tuple[dict[int, dict] | None, str | None]:
+    """Fetch de-anonymized patient identifiers (chart#, name) for patient IDs.
+
+    Uses /anon/batch which allows any logged-in user with hospital access.
+    Returns (mapping_dict, error_message). mapping_dict maps
+    patient_id -> {"chart_no": str, "patient_name": str}.
+    """
+    if not patient_ids:
+        return None, None
+
+    try:
+        result = api_client.post("/anon/batch", json_body={
+            "hospital": hospital_code,
+            "patient_ids": [int(pid) for pid in patient_ids[:5000]],
+        })
+    except api_client.APIError as exc:
+        if exc.status_code == 404:
+            return None, None
+        return None, str(exc)
+
+    if not result:
+        return None, None
+
+    mapping: dict[int, dict] = {}
+    for row in result:
+        pid = row.get("patient_id")
+        if pid is not None:
+            mapping[int(pid)] = {
+                "chart_no": str(row.get("chart_no", "")),
+                "patient_name": str(row.get("patient_name", "")),
+            }
+
+    return (mapping if mapping else None), None
 
 
 def _format_table(rows: list[dict], columns: list[str], max_rows: int = 50) -> str:
@@ -542,6 +589,7 @@ async def query_data(
     variables: list[str],
     filters: str = "",
     limit: int = 100,
+    include_patient_id: bool = False,
 ) -> str:
     """Query patient data from the stroke registry.
 
@@ -559,6 +607,9 @@ async def query_data(
                  Supported operators: =, !=, IN, NOT IN, >, <, >=, <=,
                  IS NULL, IS NOT NULL, LIKE
         limit: Max rows to return (default 100, max 5000)
+        include_patient_id: If True, include original patient identifiers
+                 (chart number, patient name) from the anonymization table.
+                 Only works for anonymized tables and the user's own hospital.
     """
     _require_auth()
     filter_list = _parse_filters(filters)
@@ -577,6 +628,25 @@ async def query_data(
     columns = result["columns"]
     rows = result["rows"]
     summary = result.get("summary", {})
+
+    # De-anonymization: merge chart_no and patient_name into results
+    anon_note = None
+    if include_patient_id and rows:
+        patient_ids = [r.get("patient_id") for r in rows if r.get("patient_id")]
+        hidx = result.get("hidx")
+        if patient_ids and hidx:
+            anon_map, anon_err = _fetch_anon_mapping(hospital_code, hidx, patient_ids)
+            if anon_err:
+                anon_note = anon_err
+            elif anon_map:
+                columns = ["chart_no", "patient_name"] + columns
+                for row in rows:
+                    pid = row.get("patient_id")
+                    anon = anon_map.get(int(pid)) if pid else None
+                    row["chart_no"] = anon["chart_no"] if anon else ""
+                    row["patient_name"] = anon["patient_name"] if anon else ""
+            else:
+                anon_note = "No anonymization data found (table may not be anonymized)."
 
     lines = []
 
@@ -597,6 +667,9 @@ async def query_data(
         "",
         _format_table(rows, columns),
     ])
+
+    if anon_note:
+        lines.append(f"\nNote: {anon_note}")
 
     if summary:
         lines.append("\n--- Summary ---")
@@ -792,6 +865,7 @@ async def export_xlsx(
     filters: str = "",
     filename: str = "",
     limit: int = 20000,
+    include_patient_id: bool = False,
 ) -> str:
     """Export patient data to an XLSX file.
 
@@ -806,6 +880,9 @@ async def export_xlsx(
         filters: JSON string of filters (same as query_data)
         filename: Output filename (auto-generated if empty)
         limit: Max rows (default 20000)
+        include_patient_id: If True, create a companion CSV with original
+                 patient identifiers (chart number, name) mapped by patient_id.
+                 Only works for anonymized tables and the user's own hospital.
     """
     _require_auth()
     filter_list = _parse_filters(filters)
@@ -849,6 +926,39 @@ async def export_xlsx(
         f"  Hospital: {hospital_code}",
         f"  Variables: {', '.join(variables)}",
     ])
+
+    # Create companion mapping CSV with de-anonymized patient IDs
+    if include_patient_id:
+        import csv
+        # Query data to get patient_ids for the same filters
+        data_body = {
+            "hospital": hospital_code,
+            "variables": variables[:1],  # minimal query just to get patient_ids
+            "filters": filter_list,
+            "limit": max(1, min(limit, 50000)),
+        }
+        try:
+            data_result = api_client.post("/query/data", json_body=data_body)
+            patient_ids = [r.get("patient_id") for r in data_result.get("rows", []) if r.get("patient_id")]
+            hidx = data_result.get("hidx")
+            if patient_ids and hidx:
+                anon_map, anon_err = _fetch_anon_mapping(hospital_code, hidx, patient_ids)
+                if anon_err:
+                    lines.append(f"\n  Note: {anon_err}")
+                elif anon_map:
+                    csv_path = save_path.rsplit(".", 1)[0] + "_patient_ids.csv"
+                    with open(csv_path, "w", newline="", encoding="utf-8") as cf:
+                        writer = csv.writer(cf)
+                        writer.writerow(["patient_id", "chart_no", "patient_name"])
+                        for pid in sorted(anon_map.keys()):
+                            a = anon_map[pid]
+                            writer.writerow([pid, a["chart_no"], a["patient_name"]])
+                    lines.append(f"  Patient ID mapping: {csv_path}")
+                    lines.append(f"  Mapped patients: {len(anon_map)}")
+                else:
+                    lines.append("\n  Note: No anonymization data found (table may not be anonymized).")
+        except api_client.APIError:
+            lines.append("\n  Note: Could not fetch patient ID mapping.")
 
     return "\n".join(lines)
 
