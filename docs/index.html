@@ -271,6 +271,22 @@ codex --version</code>
             <p class="helper-text">If login fails because of a mistyped password, SmartDB gives you three attempts before stopping. After installation, use <code>smartdb ai setup --tools auto</code> to reconfigure Claude Code, Claude Desktop, Codex, Cursor, Windsurf, or Pi Coding Agent.</p>
           </div>
         </div>
+
+        <div class="setup-step">
+          <span class="step-number">4</span>
+          <div>
+            <h3>Keep SmartDB Updated</h3>
+            <p>SmartDB checks once per day in interactive terminals and recommends an upgrade when a newer CLI is available. The check is cached and does not stop commands if the network is offline.</p>
+            <div class="code-block">
+              <code>smartdb update
+smartdb update --check</code>
+              <button class="copy-btn" data-code="smartdb update&#10;smartdb update --check" aria-label="Copy update commands">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+            <p class="helper-text">To disable reminders, run <code>smartdb config set-update-check off</code>. Re-enable with <code>smartdb config set-update-check on</code>.</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>

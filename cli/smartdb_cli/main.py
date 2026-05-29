@@ -44,12 +44,24 @@ def _version_callback(value: bool) -> None:
 
 @app.callback()
 def main(
+    ctx: typer.Context,
     version: Optional[bool] = typer.Option(
         None, "--version", "-V", callback=_version_callback, is_eager=True,
         help="Show version and exit.",
     ),
+    no_update_check: bool = typer.Option(
+        False,
+        "--no-update-check",
+        help="Skip automatic update notice for this command.",
+    ),
 ) -> None:
     """SmartDB registry CLI."""
+    if no_update_check or ctx.invoked_subcommand == "update":
+        return
+
+    from smartdb_cli.update_check import maybe_print_update_notice
+
+    maybe_print_update_notice()
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +126,13 @@ def logout() -> None:
 
 
 @app.command()
-def update() -> None:
+def update(
+    check: bool = typer.Option(
+        False,
+        "--check",
+        help="Only check whether a newer version is available.",
+    ),
+) -> None:
     """Update smartdb-cli and MCP server to the latest version."""
     import importlib.metadata
     import shutil
@@ -131,6 +149,11 @@ def update() -> None:
         REPO_URL,
     )
     from smartdb_cli.formatting import console, print_error, print_success
+    from smartdb_cli.update_check import maybe_print_update_notice
+
+    if check:
+        maybe_print_update_notice(force=True)
+        return
 
     old_version = __version__
     tmp_dir = None
@@ -295,12 +318,39 @@ def config_set_url(
     print_success(f"API URL set to: {url}")
 
 
+@config_app.command("set-update-check")
+def config_set_update_check(
+    value: str = typer.Argument(..., help="Use on/off, true/false, yes/no, or 1/0."),
+) -> None:
+    """Enable or disable automatic update notices."""
+    from smartdb_cli.formatting import print_error, print_success
+    from smartdb_cli.update_check import (
+        FALSE_VALUES,
+        TRUE_VALUES,
+        set_update_checks_enabled,
+    )
+
+    normalized = value.strip().lower()
+    if normalized in TRUE_VALUES:
+        set_update_checks_enabled(True)
+        print_success("Automatic update notices enabled.")
+        return
+    if normalized in FALSE_VALUES:
+        set_update_checks_enabled(False)
+        print_success("Automatic update notices disabled.")
+        return
+
+    print_error("Use one of: on, off, true, false, yes, no, 1, 0.")
+    raise typer.Exit(code=1)
+
+
 @config_app.command("show")
 def config_show() -> None:
     """Show current configuration."""
     from smartdb_cli import auth
     from smartdb_cli.config import EXPORT_DIR, get_api_url, SESSION_FILE, CONFIG_FILE
     from smartdb_cli.formatting import console
+    from smartdb_cli.update_check import update_checks_enabled
 
     from rich.panel import Panel
     from rich.table import Table
@@ -313,6 +363,10 @@ def config_show() -> None:
     info.add_row("Config file", str(CONFIG_FILE))
     info.add_row("Session file", str(SESSION_FILE))
     info.add_row("Export directory", EXPORT_DIR)
+    info.add_row(
+        "Automatic update notices",
+        "enabled" if update_checks_enabled() else "disabled",
+    )
 
     user = auth.get_current_user()
     if user:

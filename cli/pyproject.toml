@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "smartdb-cli"
-version = "0.1.2"
+version = "0.1.3"
 description = "CLI tool for querying and exporting data from the SmartDB registry"
 requires-python = ">=3.10"
 dependencies = [

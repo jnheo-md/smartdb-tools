@@ -51,6 +51,24 @@ smartdb query followup YSU --period 3m
 smartdb export xlsx YSU --vars "pt_sex,pt_age" --filters '[{"variable":"Thr_mechanical","operator":"=","value":"1"}]'
 ```
 
+## Updates
+
+SmartDB checks for newer CLI releases once per day in interactive terminals. If
+an update is available, it prints a short notice and leaves the command running
+normally.
+
+```bash
+smartdb update          # upgrade CLI + MCP server files
+smartdb update --check  # check manually
+```
+
+Disable or re-enable automatic notices:
+
+```bash
+smartdb config set-update-check off
+smartdb config set-update-check on
+```
+
 ## AI Integration
 
 ### MCP-based tools (Claude, Codex, Cursor, Windsurf, Pi Coding Agent)

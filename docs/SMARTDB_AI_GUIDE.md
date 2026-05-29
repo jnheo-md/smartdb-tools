@@ -209,6 +209,12 @@ instead of `%APPDATA%\Claude\claude_desktop_config.json`. SmartDB writes the MCP
 entry to both the standard path and detected MSIX package paths. Restart Claude
 Desktop after setup.
 
+### Updates
+SmartDB checks once per day in interactive terminals and recommends an upgrade
+when a newer CLI is available. Run `smartdb update` to upgrade the CLI and MCP
+server files, or `smartdb update --check` to check manually. Disable notices
+with `smartdb config set-update-check off`.
+
 ### ChatGPT Custom GPT
 1. Paste the "Critical Safety Rules" and "Layout-First Workflow" sections into the GPT's system instructions
 2. Add the SmartDB API as an Action using the API Reference above (requires an OpenAPI spec)
