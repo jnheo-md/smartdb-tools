@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,6 +27,10 @@ import variable_safety
 
 REFERENCE_CACHE_DIR = Path.home() / ".smartdb" / "reference-cache"
 FIELD_REFERENCE_FILENAME = "smartdb_field_reference.json"
+PREPROCESS_USER_CONFIG_PATH = Path.home() / ".smartdb" / "preprocess.toml"
+PREPROCESS_USER_MEMORY_PATH = Path.home() / ".smartdb" / "memory" / "preprocess.md"
+PREPROCESS_PROJECT_CONFIG_PATH = Path.cwd() / ".smartdb" / "preprocess.toml"
+PREPROCESS_PROJECT_MEMORY_PATH = Path.cwd() / ".smartdb" / "preprocess.md"
 DEFAULT_FIELD_REFERENCE_URL = os.environ.get(
     "SMARTDB_FIELD_REFERENCE_URL",
     "https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/"
@@ -94,6 +99,12 @@ mcp = FastMCP(
         "- query_data(..., include_patient_id=True) → include chart# and name in results\n"
         "- export_xlsx(..., include_patient_id=True) → create companion CSV with patient IDs\n"
         "include_patient_id works for any user with access to the hospital.\n\n"
+        "OPTIONAL USER PREPROCESSING PREFERENCES:\n"
+        "- Users may keep free-text preferences in ~/.smartdb/memory/preprocess.md and deterministic\n"
+        "  profiles in ~/.smartdb/preprocess.toml.\n"
+        "- Free-text memory is advisory only. It can guide suggestions but must never silently modify data.\n"
+        "- Before using a profile, read get_preprocess_preferences(), summarize the intended actions,\n"
+        "  validate source fields/encodings, and ask for confirmation.\n\n"
         "RECOMMENDED WORKFLOWS:\n"
         "1. EXPLORE: list_hospitals() → list_tables() → get_layout_fields() → "
         "get_section_variables() → present variables to user → let them choose.\n"
@@ -679,6 +690,61 @@ def _download_field_reference(source_url: str) -> dict:
             f"Downloaded field reference cache is invalid: {validation_error}"
         )
     return payload
+
+
+def _read_text_if_exists(path: Path, max_chars: int = 12000) -> str:
+    """Read a local advisory config/memory file with a defensive size limit."""
+    if not path.exists():
+        return ""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return f"[Could not read {path}: {exc}]"
+    if len(text) > max_chars:
+        return text[:max_chars] + "\n...[truncated]"
+    return text
+
+
+def _preprocess_paths_for_scope(scope: str) -> list[tuple[str, Path, Path]]:
+    normalized = scope.lower().strip()
+    if normalized == "user":
+        return [("user", PREPROCESS_USER_CONFIG_PATH, PREPROCESS_USER_MEMORY_PATH)]
+    if normalized == "project":
+        return [("project", PREPROCESS_PROJECT_CONFIG_PATH, PREPROCESS_PROJECT_MEMORY_PATH)]
+    if normalized == "combined":
+        return [
+            ("user", PREPROCESS_USER_CONFIG_PATH, PREPROCESS_USER_MEMORY_PATH),
+            ("project", PREPROCESS_PROJECT_CONFIG_PATH, PREPROCESS_PROJECT_MEMORY_PATH),
+        ]
+    raise api_client.APIError("scope must be one of: combined, user, project")
+
+
+def _extract_preprocess_profile_names(config_text: str) -> list[str]:
+    """Extract profile names from TOML text without executing or importing it."""
+    names: list[str] = []
+    for match in re.finditer(r"^\s*\[\[?profile\.([A-Za-z0-9_-]+)(?:[\].])", config_text, re.MULTILINE):
+        name = match.group(1)
+        if name not in names:
+            names.append(name)
+    return names
+
+
+def _extract_preprocess_profile_text(config_text: str, profile_name: str) -> str:
+    """Extract one profile block from TOML text for model/user review."""
+    header_pattern = re.compile(rf"^\s*\[\[?profile\.{re.escape(profile_name)}(?:[\].])", re.MULTILINE)
+    first = header_pattern.search(config_text)
+    if not first:
+        return ""
+
+    next_profile = re.search(
+        r"^\s*\[\[?profile\.(?!"
+        + re.escape(profile_name)
+        + r"(?:[\].]))[A-Za-z0-9_-]+(?:[\].])",
+        config_text[first.end():],
+        re.MULTILINE,
+    )
+    end_index = first.end() + next_profile.start() if next_profile else len(config_text)
+    return config_text[first.start():end_index].strip()
 
 
 def _format_reference_metadata(payload: dict, local_path: Path | None = None) -> list[str]:
@@ -1278,6 +1344,70 @@ async def list_field_reference_differences(
     lines.append("")
     lines.append("Use lookup_field_reference(variable_name) for details, then validate live before export.")
     return "\n".join(lines)
+
+
+@mcp.tool()
+async def get_preprocess_preferences(scope: str = "combined") -> str:
+    """Read optional user/project preprocessing memory and profile summaries.
+
+    Free-text memory is advisory only. It can guide suggestions, but any actual
+    data processing must use an explicit deterministic profile and user
+    confirmation.
+
+    Args:
+        scope: combined, user, or project.
+    """
+    path_rows = _preprocess_paths_for_scope(scope)
+    lines = [
+        "Optional SmartDB preprocessing preferences",
+        "Free-text memory is advisory only; do not silently modify data from it.",
+        "Before applying any profile, summarize actions, validate fields/encodings, and ask for confirmation.",
+        "",
+    ]
+    for label, config_path, memory_path in path_rows:
+        lines.append(f"## {label}")
+        lines.append(f"Profile config: {config_path}")
+        config_text = _read_text_if_exists(config_path)
+        if config_text:
+            names = _extract_preprocess_profile_names(config_text)
+            lines.append("Profiles: " + (", ".join(names) if names else "(none found)"))
+        else:
+            lines.append("Profiles: (no config file)")
+        lines.append(f"Memory: {memory_path}")
+        memory_text = _read_text_if_exists(memory_path)
+        lines.append(memory_text if memory_text else "(no memory file)")
+        lines.append("")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+async def get_preprocess_profile(profile_name: str, scope: str = "combined") -> str:
+    """Read one optional preprocessing profile for review.
+
+    This only reads profile text. It does not execute preprocessing. The MCP
+    client must validate fields/encodings and ask the user before using it.
+
+    Args:
+        profile_name: Profile name from smartdb preprocess list-profiles.
+        scope: combined, user, or project.
+    """
+    path_rows = _preprocess_paths_for_scope(scope)
+    for label, config_path, _ in path_rows:
+        config_text = _read_text_if_exists(config_path)
+        if not config_text:
+            continue
+        profile_text = _extract_preprocess_profile_text(config_text, profile_name)
+        if profile_text:
+            return "\n".join([
+                f"Preprocess profile: {profile_name}",
+                f"Source: {label}",
+                f"Config: {config_path}",
+                "",
+                profile_text,
+                "",
+                "This profile is opt-in. Validate source fields and encodings, then ask for confirmation before applying it.",
+            ])
+    return f"Preprocess profile '{profile_name}' was not found in scope '{scope}'."
 
 
 @mcp.tool()

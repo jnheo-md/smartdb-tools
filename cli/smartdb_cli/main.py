@@ -15,6 +15,7 @@ from smartdb_cli.commands.schema import app as schema_app
 from smartdb_cli.commands.query import app as query_app
 from smartdb_cli.commands.export import app as export_app
 from smartdb_cli.commands.ai import app as ai_app
+from smartdb_cli.commands.preprocess import app as preprocess_app
 
 app = typer.Typer(
     name="smartdb",
@@ -32,6 +33,7 @@ app.add_typer(schema_app, name="schema", help="Explore hospital schemas, tables,
 app.add_typer(query_app, name="query", help="Query patient data from the stroke registry.")
 app.add_typer(export_app, name="export", help="Export patient data to XLSX files.")
 app.add_typer(ai_app, name="ai", help="Configure SmartDB for AI assistants and MCP clients.")
+app.add_typer(preprocess_app, name="preprocess", help="Manage optional preprocessing preferences.")
 
 
 def _version_callback(value: bool) -> None:
