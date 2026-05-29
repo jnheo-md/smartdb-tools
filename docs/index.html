@@ -49,6 +49,7 @@
         <li role="none"><a href="#installation" role="menuitem">Installation</a></li>
         <li role="none"><a href="#usage" role="menuitem">Usage</a></li>
         <li role="none"><a href="#environments" role="menuitem">Environments</a></li>
+        <li role="none"><a href="#preprocessing" role="menuitem">Preprocessing</a></li>
         <li role="none"><a href="#security" role="menuitem">Security</a></li>
         <li role="none"><a href="https://github.com/jnheo-md/smartdb-tools" target="_blank" rel="noopener noreferrer" role="menuitem">GitHub</a></li>
       </ul>
@@ -459,6 +460,64 @@ smartdb export followup YSU -p 3m -v "pt_sex,pt_age"</code>
         </div>
         <p><strong>CLI-based tools</strong> (Copilot, Aider, and other shell-capable agents): Install the CLI, then the AI agent can run <code>smartdb guide</code> to learn the domain rules and use any <code>smartdb</code> command. An <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> file in the repository provides structured instructions for AI agents.</p>
         <p>For the full cross-platform AI reference, see <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/docs/SMARTDB_AI_GUIDE.md" target="_blank" rel="noopener noreferrer">SMARTDB_AI_GUIDE.md</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Optional Preprocessing Preferences -->
+  <section id="preprocessing" aria-label="Optional preprocessing preferences">
+    <div class="container">
+      <div class="section-kicker">Optional per-user setup</div>
+      <h2 class="section-title">Preprocessing Preferences</h2>
+      <p class="section-description">Users can keep personal preferences for how exported data should be cleaned, deduplicated, or formatted. These preferences are local and opt-in, so default SmartDB exports are unchanged for everyone else.</p>
+
+      <div class="preprocess-grid">
+        <article class="preprocess-card">
+          <h3>Free-text memory</h3>
+          <p>Store plain-language notes about how you usually want data processed. This is advisory only and cannot directly modify data.</p>
+          <div class="code-block compact-code">
+            <code>smartdb preprocess init --scope user
+smartdb preprocess memory add "For EVT exports, keep an audit trail."</code>
+            <button class="copy-btn" data-code="smartdb preprocess init --scope user&#10;smartdb preprocess memory add &quot;For EVT exports, keep an audit trail.&quot;" aria-label="Copy preprocessing memory commands">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </article>
+
+        <article class="preprocess-card">
+          <h3>Deterministic profiles</h3>
+          <p>Actual processing rules live in <code>preprocess.toml</code>. Profiles can be listed, explained, and validated before MCP or a user applies them.</p>
+          <div class="code-block compact-code">
+            <code>smartdb preprocess list-profiles
+smartdb preprocess validate</code>
+            <button class="copy-btn" data-code="smartdb preprocess list-profiles&#10;smartdb preprocess validate" aria-label="Copy preprocessing profile commands">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <div class="install-section">
+        <h3>Reference sample: Pf. Nam preferences</h3>
+        <p>A sample profile file is included at <code>examples/preprocess/pf_nam_preprocess.toml</code>. It contains preprocessing preferences made by Pf. Nam and can be inspected, copied, or passed explicitly.</p>
+        <div class="code-block">
+          <code>smartdb preprocess list-profiles --config examples/preprocess/pf_nam_preprocess.toml
+smartdb preprocess explain pf_nam_evt --config examples/preprocess/pf_nam_preprocess.toml
+smartdb preprocess validate pf_nam_evt --config examples/preprocess/pf_nam_preprocess.toml</code>
+          <button class="copy-btn" data-code="smartdb preprocess list-profiles --config examples/preprocess/pf_nam_preprocess.toml&#10;smartdb preprocess explain pf_nam_evt --config examples/preprocess/pf_nam_preprocess.toml&#10;smartdb preprocess validate pf_nam_evt --config examples/preprocess/pf_nam_preprocess.toml" aria-label="Copy Pf. Nam preprocessing commands">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+        <p class="helper-text">MCP should read these preferences, summarize intended actions, validate source fields and saved-value encodings, then ask for confirmation before applying any profile.</p>
+      </div>
+
+      <div class="preprocess-safety">
+        <h3>Safety rules</h3>
+        <ul class="prereq-list">
+          <li>Free-text memory is advisory only; actual rules must be deterministic TOML profiles.</li>
+          <li>Do not store patient identifiers or clinical values in memory files.</li>
+          <li>SmartDB safety rules still apply: use dedicated NIHSS and follow-up tools instead of unsafe post-processing shortcuts.</li>
+        </ul>
       </div>
     </div>
   </section>
