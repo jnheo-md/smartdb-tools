@@ -137,8 +137,20 @@ def _is_claude_desktop_detected() -> bool:
             or (Path.home() / "Library" / "Application Support" / "Claude").exists()
         )
     if system == "Windows":
-        appdata = os.environ.get("APPDATA")
-        return bool(appdata and (Path(appdata) / "Claude").exists())
+        localappdata = os.environ.get("LOCALAPPDATA")
+        if any(
+            path.parent.exists() or path.exists()
+            for path in _claude_desktop_config_paths()
+        ):
+            return True
+        if localappdata:
+            local_dir = Path(localappdata)
+            return (
+                (local_dir / "Programs" / "Claude").exists()
+                or (local_dir / "AnthropicClaude").exists()
+                or bool(_windows_claude_desktop_msix_config_paths())
+            )
+        return False
     return (Path.home() / ".config" / "Claude").exists()
 
 
@@ -231,16 +243,62 @@ def _write_codex_config(config_path: Path, python_path: str, server_path: str) -
     config_path.write_text(updated, encoding="utf-8")
 
 
-def _claude_desktop_config_path() -> Path:
+def _unique_paths(paths: list[Path]) -> list[Path]:
+    seen: set[str] = set()
+    unique: list[Path] = []
+    for path in paths:
+        key = str(path).casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(path)
+    return unique
+
+
+def _windows_claude_desktop_standard_config_path() -> Path:
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        return Path(appdata) / "Claude" / "claude_desktop_config.json"
+    return Path.home() / "AppData" / "Roaming" / "Claude" / "claude_desktop_config.json"
+
+
+def _windows_claude_desktop_msix_config_paths() -> list[Path]:
+    localappdata = os.environ.get("LOCALAPPDATA")
+    if not localappdata:
+        return []
+
+    packages_dir = Path(localappdata) / "Packages"
+    if not packages_dir.exists():
+        return []
+
+    candidates = [
+        package_dir / "LocalCache" / "Roaming" / "Claude" / "claude_desktop_config.json"
+        for package_dir in packages_dir.glob("*Claude*")
+        if package_dir.is_dir()
+    ]
+    candidates = _unique_paths(sorted(candidates, key=lambda path: str(path).casefold()))
+    active_candidates = [path for path in candidates if path.exists() or path.parent.exists()]
+    return active_candidates or candidates
+
+
+def _claude_desktop_config_paths() -> list[Path]:
     system = platform.system()
     if system == "Darwin":
-        return Path.home() / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json"
+        return [
+            Path.home()
+            / "Library"
+            / "Application Support"
+            / "Claude"
+            / "claude_desktop_config.json"
+        ]
     if system == "Windows":
-        appdata = os.environ.get("APPDATA")
-        if appdata:
-            return Path(appdata) / "Claude" / "claude_desktop_config.json"
-        return Path.home() / "AppData" / "Roaming" / "Claude" / "claude_desktop_config.json"
-    return Path.home() / ".config" / "Claude" / "claude_desktop_config.json"
+        return _unique_paths(
+            [
+                _windows_claude_desktop_standard_config_path(),
+                *_windows_claude_desktop_msix_config_paths(),
+            ]
+        )
+    return [Path.home() / ".config" / "Claude" / "claude_desktop_config.json"]
 
 
 def _remove_stale_claude_settings() -> None:
@@ -304,9 +362,20 @@ def _configure_claude_code(python_path: str, server_path: str) -> bool:
 
 
 def _configure_claude_desktop(python_path: str, server_path: str) -> bool:
-    config_path = _claude_desktop_config_path()
-    _merge_mcp_json_config(config_path, python_path, server_path)
-    print_success(f"Claude Desktop configured: {config_path}")
+    config_paths = _claude_desktop_config_paths()
+    for config_path in config_paths:
+        _merge_mcp_json_config(config_path, python_path, server_path)
+
+    if len(config_paths) == 1:
+        print_success(f"Claude Desktop configured: {config_paths[0]}")
+    else:
+        print_success("Claude Desktop configured in all detected Windows config locations:")
+        for config_path in config_paths:
+            console.print(f"[dim]  - {config_path}[/dim]")
+        print_warning(
+            "Windows Claude Desktop MSIX installs may ignore the standard "
+            "%APPDATA% config, so SmartDB also updates the detected package config."
+        )
     return True
 
 

@@ -203,6 +203,12 @@ smartdb ai setup --tools auto
 
 For a specific client, use `--tools claude-code`, `--tools claude-desktop`, `--tools codex`, `--tools cursor`, `--tools windsurf`, or `--tools pi-agent`.
 
+Windows note for Claude Desktop: Store/MSIX installs can read MCP settings from
+`%LOCALAPPDATA%\Packages\...\LocalCache\Roaming\Claude\claude_desktop_config.json`
+instead of `%APPDATA%\Claude\claude_desktop_config.json`. SmartDB writes the MCP
+entry to both the standard path and detected MSIX package paths. Restart Claude
+Desktop after setup.
+
 ### ChatGPT Custom GPT
 1. Paste the "Critical Safety Rules" and "Layout-First Workflow" sections into the GPT's system instructions
 2. Add the SmartDB API as an Action using the API Reference above (requires an OpenAPI spec)

@@ -62,6 +62,11 @@ smartdb ai setup --tools auto
 smartdb ai setup --tools claude-code,claude-desktop,codex,cursor,windsurf,pi-agent
 ```
 
+On Windows, Claude Desktop may use a Microsoft Store/MSIX package config under
+`%LOCALAPPDATA%\Packages\...\LocalCache\Roaming\Claude` instead of the standard
+`%APPDATA%\Claude` folder. SmartDB writes to both the standard config and any
+detected MSIX Claude config locations, then Claude Desktop must be restarted.
+
 To manually configure another MCP client, add this to its MCP settings:
 
 macOS/Linux:

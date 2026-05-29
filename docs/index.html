@@ -458,6 +458,7 @@ smartdb export followup YSU -p 3m -v "pt_sex,pt_age"</code>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
+        <p><strong>Windows Claude Desktop note:</strong> Microsoft Store/MSIX installs may read MCP settings from <code>%LOCALAPPDATA%\Packages\...\LocalCache\Roaming\Claude</code> instead of the standard <code>%APPDATA%\Claude</code> folder. SmartDB updates both locations when detected; restart Claude Desktop after setup.</p>
         <p><strong>CLI-based tools</strong> (Copilot, Aider, and other shell-capable agents): Install the CLI, then the AI agent can run <code>smartdb guide</code> to learn the domain rules and use any <code>smartdb</code> command. An <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> file in the repository provides structured instructions for AI agents.</p>
         <p>For the full cross-platform AI reference, see <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/docs/SMARTDB_AI_GUIDE.md" target="_blank" rel="noopener noreferrer">SMARTDB_AI_GUIDE.md</a>.</p>
       </div>
