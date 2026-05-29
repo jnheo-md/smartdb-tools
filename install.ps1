@@ -25,6 +25,37 @@ function Write-Good  { param($msg) Write-Host "  $msg" -ForegroundColor Green }
 function Write-Bad   { param($msg) Write-Host "  $msg" -ForegroundColor Red }
 function Write-Bold  { param($msg) Write-Host "  $msg" -ForegroundColor White }
 
+function Invoke-NativeCommand {
+    param(
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$Command,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ErrorMessage
+    )
+
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = & $Command 2>&1
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+
+    if ($exitCode -ne 0) {
+        Write-Bad $ErrorMessage
+        if ($output) {
+            foreach ($line in $output) {
+                Write-Dim $line.ToString()
+            }
+        }
+        exit 1
+    }
+
+    return $output
+}
+
 function Find-Python {
     # Try versioned names first, then plain python3 / python
     foreach ($name in @("python3", "python")) {
@@ -73,11 +104,9 @@ if ($scriptDir -and (Test-Path (Join-Path $scriptDir "cli\pyproject.toml"))) {
         exit 1
     }
     $tempClone = Join-Path $env:TEMP "smartdb-tools-install-$(Get-Random)"
-    git clone --depth 1 $REPO_URL $tempClone 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Bad "Error: Failed to clone repository."
-        exit 1
-    }
+    Invoke-NativeCommand -ErrorMessage "Error: Failed to clone repository." -Command {
+        git clone --quiet --depth 1 $REPO_URL $tempClone
+    } | Out-Null
     $sourceDir = $tempClone
     Write-Dim "Downloaded to temporary directory."
 }
