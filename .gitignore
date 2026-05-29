@@ -18,6 +18,8 @@ ENV/
 .vscode/
 .codex/
 .omc/
+.smartdb/preprocess.md
+.smartdb/preprocess.local.toml
 *.swp
 *.swo
 *~

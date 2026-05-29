@@ -90,6 +90,97 @@ Any AI agent that can run shell commands on your machine can use the SmartDB CLI
 
 For a comprehensive cross-platform reference, see [docs/SMARTDB_AI_GUIDE.md](docs/SMARTDB_AI_GUIDE.md).
 
+## Optional User Preprocessing Preferences
+
+Some users have legacy Excel macro workflows or personal preferences for how exported data should be cleaned, deduplicated, or formatted. SmartDB keeps these preferences **optional, local, and opt-in** so they do not affect other users or default exports.
+
+### Safety model
+
+- **Free-text memory is advisory only** — it can help an AI assistant understand your preferences, but it cannot directly modify data.
+- **Structured profiles are deterministic** — actual preprocessing rules must be written in `preprocess.toml`.
+- **No silent transformations** — MCP should summarize the profile and ask for confirmation before applying it.
+- **No patient data in memory** — store workflow preferences only, not chart numbers, names, or clinical values.
+- **SmartDB safety rules still apply** — do not use `NIHSS_total_*` or direct 3-month mRS macro logic; use the dedicated NIHSS and follow-up tools.
+
+### Create your personal preprocessing files
+
+```bash
+smartdb preprocess init --scope user
+```
+
+This creates:
+
+| File | Purpose |
+|------|---------|
+| `~/.smartdb/memory/preprocess.md` | Free-text notes about how you prefer data to be processed |
+| `~/.smartdb/preprocess.toml` | Deterministic profiles that can be validated and audited |
+
+You can add memory from the terminal:
+
+```bash
+smartdb preprocess memory add "For EVT exports, identify duplicates by uniq_id + thrombolysis_count_during_adm and keep the most complete row."
+smartdb preprocess memory show
+```
+
+### Create project-level profiles
+
+If a team wants a shared profile in a repository, create a project config:
+
+```bash
+smartdb preprocess init --scope project
+```
+
+This creates `.smartdb/preprocess.toml` in the current project. Commit it only if the rules are intended to be shared. Personal project notes in `.smartdb/preprocess.md` are ignored by Git by default.
+
+### Review and validate profiles
+
+```bash
+smartdb preprocess list-profiles
+smartdb preprocess explain example_evt
+smartdb preprocess validate example_evt
+smartdb preprocess context
+```
+
+Profile precedence is:
+
+1. Explicit file passed with `--config`
+2. User profile at `~/.smartdb/preprocess.toml`
+3. Project profile at `.smartdb/preprocess.toml`
+4. Built-in safe defaults
+
+Use an explicit file when you want fully reproducible behavior:
+
+```bash
+smartdb preprocess validate example_evt --config ./my_rules/preprocess.toml
+```
+
+### How MCP should use this
+
+MCP tools can read your preferences with `get_preprocess_preferences()` and one profile with `get_preprocess_profile(profile_name)`. The intended flow is:
+
+1. Read free-text memory and available profiles.
+2. Propose a deterministic profile or explain an existing one.
+3. Validate every source field and saved-value encoding per hospital.
+4. Ask for user confirmation.
+5. Run preprocessing only after confirmation, writing an audit trail.
+
+At this stage, these commands manage memory and profiles. They do **not** yet transform exported XLSX files. That separation is intentional so the profile design can be reviewed before any data-changing command is added.
+
+### Roll back this feature branch
+
+The current stable branch remains `master`. This optional preprocessing system is developed on a separate branch so it can be reviewed or discarded:
+
+```bash
+git switch master
+git branch -D codex/user-preprocess-profiles
+```
+
+If the branch has already been pushed and should be removed from GitHub:
+
+```bash
+git push origin --delete codex/user-preprocess-profiles
+```
+
 ### Cross-hospital field reference
 
 To maintain a GitHub-hosted reference of column presence, table locations, saved-value encodings, and data-presence differences across hospitals:
