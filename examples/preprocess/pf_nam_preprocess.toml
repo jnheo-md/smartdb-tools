@@ -1,0 +1,202 @@
+# SmartDB preprocessing preferences made by Pf. Nam
+#
+# This sample is intentionally opt-in. Copy it to ~/.smartdb/preprocess.toml
+# or pass it with --config when you want to review or use these preferences.
+# Free-text notes can be stored separately in ~/.smartdb/memory/preprocess.md.
+
+version = 1
+
+[profile.pf_nam_general]
+description = "Preprocessing preferences made by Pf. Nam for general patient exports."
+made_by = "Pf. Nam"
+enabled = false
+requires_confirmation = true
+
+[profile.pf_nam_general.dedupe]
+enabled = true
+mode = "general"
+group_by = ["uniq_id"]
+keep = "most_complete"
+audit_deleted_rows = true
+
+[[profile.pf_nam_general.derive]]
+name = "Coronary artery disease"
+type = "one_if_any"
+requires_encoding_check = true
+sources = [
+  "Coronary_Stent_PTCA_onoff",
+  "CABG_onoff",
+  "MI_onoff",
+  "Unstable_angina_onoff",
+  "Angiographically_confirmed_CAOD_onoff",
+]
+
+[[profile.pf_nam_general.derive]]
+name = "Atrial fibrillation all"
+type = "one_if_any"
+requires_encoding_check = true
+sources = [
+  "Atrial_fibrillation_onoff",
+  "Atrial_fibrillation",
+  "Atrial_fibrillation_isFirstDetected",
+  "Time_course_Paroxysmal",
+  "Time_course_PersistentOrPermanent",
+  "Atrial_flutter",
+]
+
+[[profile.pf_nam_general.derive]]
+name = "CHF all"
+type = "one_if_any"
+requires_encoding_check = true
+sources = ["CHF_onoff", "congestive_HF"]
+
+[[profile.pf_nam_general.derive]]
+name = "Aortic atheroma arch or ascending"
+type = "one_if_any"
+requires_encoding_check = true
+sources = ["Aortic_arch_plaque_onoff", "Ascending_aorta_onoff"]
+
+[[profile.pf_nam_general.normalize]]
+type = "binary_one_only"
+requires_encoding_check = true
+fields = [
+  "PAOD_existence",
+  "Previous_stroke_existence",
+  "cancer_active",
+]
+
+[[profile.pf_nam_general.normalize]]
+type = "specific_value_to_one"
+field = "Smoking_experience"
+positive_value = "3"
+requires_encoding_check = true
+
+[[profile.pf_nam_general.derive]]
+name = "TOAST all"
+type = "first_non_empty"
+sources = ["mTOAST_calc", "toast", "TOAST_calc"]
+requires_encoding_check = true
+
+[[profile.pf_nam_general.derive]]
+name = "TOAST number"
+type = "map_values"
+source = "TOAST all"
+requires_encoding_check = true
+[profile.pf_nam_general.derive.value_map]
+LAA = 1
+CE = 2
+LAC = 3
+SOD = 4
+UT = 5
+UN = 6
+UI = 7
+TIA = 8
+
+[profile.pf_nam_evt]
+description = "Preprocessing preferences made by Pf. Nam for EVT/IVT exports."
+made_by = "Pf. Nam"
+enabled = false
+requires_confirmation = true
+
+[profile.pf_nam_evt.dedupe]
+enabled = true
+mode = "evt"
+group_by = ["uniq_id", "thrombolysis_count_during_adm"]
+keep = "most_complete"
+audit_deleted_rows = true
+
+[[profile.pf_nam_evt.derive]]
+name = "Reperfusion Tx"
+type = "binary_combo_label"
+requires_encoding_check = true
+sources = { ivt = "Thr_IV", evt = "Thr_mechanical" }
+[profile.pf_nam_evt.derive.labels]
+both = "IVT + EVT"
+ivt_only = "IVT only"
+evt_only = "EVT only"
+neither = "No reperfusion Tx"
+
+[[profile.pf_nam_evt.derive]]
+name = "Occlusion site"
+type = "concat_checked_labels"
+requires_encoding_check = true
+[profile.pf_nam_evt.derive.sources]
+Thr_Occlusion_notSeen = "No occlusion"
+Thr_Occ_ICAcervical = "ICA cervical"
+Thr_Occ_ICAcavernous = "ICA cavernous"
+Thr_Occ_ICA_T = "ICA T"
+Thr_Occ_M1 = "M1"
+Thr_Occ_M2 = "M2"
+Thr_Occ_ACA = "ACA"
+Thr_Occ_BA = "BA"
+Thr_Occ_PCA = "PCA"
+Thr_Occ_DistalVA = "Distal VA"
+Thr_Occ_ProximalVA = "Proximal VA"
+
+[[profile.pf_nam_evt.derive]]
+name = "Hemorrhagic transformation Heidelberg classification"
+type = "concat_checked_labels"
+default_when_all_checked_fields_are_zero = "No HT"
+requires_encoding_check = true
+[profile.pf_nam_evt.derive.sources]
+Thr_No_Hemorrhagic_transform = "No HT"
+Thr_hemorrhagic_hi1 = "HI1"
+Thr_hemorrhagic_hi2 = "HI2"
+Thr_hemorrhagic_ph1 = "PH1"
+Thr_hemorrhagic_ph2 = "PH2"
+Thr_Hemorrhagic_SAH = "SAH"
+Thr_Hemorrhagic_IVH = "IVH"
+Thr_Hemorrhagic_ICH = "ICH"
+
+[[profile.pf_nam_evt.derive]]
+name = "Hemorrhagic transformation ECASS 3"
+type = "priority_concat_checked_labels"
+default_when_all_checked_fields_are_zero = "No HT"
+requires_encoding_check = true
+[profile.pf_nam_evt.derive.primary_sources]
+Thr_hemorrhagic_hi1 = "HI1"
+Thr_hemorrhagic_hi2 = "HI2"
+Thr_hemorrhagic_ph1 = "PH1"
+Thr_hemorrhagic_ph2 = "PH2"
+[profile.pf_nam_evt.derive.secondary_sources]
+Thr_Hemorrhagic_SAH = "SAH"
+Thr_Hemorrhagic_IVH = "IVH"
+Thr_Hemorrhagic_ICH = "ICH"
+
+[profile.pf_nam_evt.column_order]
+enabled = true
+fields = [
+  "hospital_id",
+  "uniq_id",
+  "thrombolysis_count_during_adm",
+  "adm_date",
+  "pt_age",
+  "pt_sex",
+  "Hypertension_existence",
+  "DM_existence",
+  "Dyslipidemia_existence",
+  "Atrial fibrillation all",
+  "Coronary artery disease",
+  "CHF all",
+  "PAOD_existence",
+  "Previous_stroke_existence",
+  "cancer_active",
+  "prestroke_mRS",
+  "TOAST all",
+  "TOAST number",
+  "admission_NIH_day_0",
+  "Reperfusion Tx",
+  "Occlusion site",
+  "Thr_TICI_24hrFU",
+  "hemorrhage_symptom",
+  "Hemorrhagic transformation ECASS 3",
+  "secret_immediate_TICI",
+  "NIH_before_EVT",
+  "admission_NIH_after_tPA",
+  "Hemorrhagic transformation Heidelberg classification",
+  "Thr_aspects",
+  "Thr_TANscale",
+  "onset_to_er_calculated",
+  "onset_to_puncture_calculated",
+  "onset_to_recanalization_calculated",
+]

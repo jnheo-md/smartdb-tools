@@ -92,7 +92,7 @@ For a comprehensive cross-platform reference, see [docs/SMARTDB_AI_GUIDE.md](doc
 
 ## Optional User Preprocessing Preferences
 
-Some users have legacy Excel macro workflows or personal preferences for how exported data should be cleaned, deduplicated, or formatted. SmartDB keeps these preferences **optional, local, and opt-in** so they do not affect other users or default exports.
+Some users have personal preferences for how exported data should be cleaned, deduplicated, or formatted. SmartDB keeps these preferences **optional, local, and opt-in** so they do not affect other users or default exports.
 
 ### Safety model
 
@@ -100,7 +100,7 @@ Some users have legacy Excel macro workflows or personal preferences for how exp
 - **Structured profiles are deterministic** — actual preprocessing rules must be written in `preprocess.toml`.
 - **No silent transformations** — MCP should summarize the profile and ask for confirmation before applying it.
 - **No patient data in memory** — store workflow preferences only, not chart numbers, names, or clinical values.
-- **SmartDB safety rules still apply** — do not use `NIHSS_total_*` or direct 3-month mRS macro logic; use the dedicated NIHSS and follow-up tools.
+- **SmartDB safety rules still apply** — do not use `NIHSS_total_*` or direct 3-month mRS post-processing; use the dedicated NIHSS and follow-up tools.
 
 ### Create your personal preprocessing files
 
@@ -152,6 +152,24 @@ Use an explicit file when you want fully reproducible behavior:
 
 ```bash
 smartdb preprocess validate example_evt --config ./my_rules/preprocess.toml
+```
+
+### Reference sample: Pf. Nam preferences
+
+A reference profile file is included at `examples/preprocess/pf_nam_preprocess.toml`. This is a sample set of preprocessing preferences made by Pf. Nam. Users can inspect it, copy it, or pass it explicitly:
+
+```bash
+smartdb preprocess list-profiles --config examples/preprocess/pf_nam_preprocess.toml
+smartdb preprocess explain pf_nam_evt --config examples/preprocess/pf_nam_preprocess.toml
+smartdb preprocess validate pf_nam_evt --config examples/preprocess/pf_nam_preprocess.toml
+```
+
+To use it as your personal starting point:
+
+```bash
+mkdir -p ~/.smartdb
+cp examples/preprocess/pf_nam_preprocess.toml ~/.smartdb/preprocess.toml
+smartdb preprocess validate
 ```
 
 ### How MCP should use this

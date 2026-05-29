@@ -61,7 +61,7 @@ requires_confirmation = true
 [profile.audit_only.audit]
 enabled = true
 
-# Example legacy-style profile. Keep disabled until reviewed for your project.
+# Example user-specific profile. Keep disabled until reviewed for your project.
 [profile.example_evt]
 description = "Example EVT export cleanup profile. Review before use."
 enabled = false
