@@ -5,6 +5,7 @@ INSTALL_DIR="$HOME/.smartdb"
 VENV_DIR="$INSTALL_DIR/venv"
 BIN_DIR="$VENV_DIR/bin"
 MCP_DIR="$INSTALL_DIR/mcp-server"
+REFERENCE_CACHE_DIR="$INSTALL_DIR/reference-cache"
 
 # ── Colours ──────────────────────────────────────────────────────────────────
 red()   { printf '\033[0;31m%s\033[0m\n' "$*"; }
@@ -97,6 +98,15 @@ main() {
     mkdir -p "$MCP_DIR"
     cp "$script_dir/server.py" "$MCP_DIR/server.py"
     cp "$script_dir/api_client.py" "$MCP_DIR/api_client.py"
+    cp "$script_dir/variable_safety.py" "$MCP_DIR/variable_safety.py"
+
+    # ── 4b. Copy generated field reference cache if bundled ─────────────────
+    local reference_source="$script_dir/../reference/hospital-field-reference/smartdb_field_reference.json"
+    if [ -f "$reference_source" ]; then
+        dim "  Copying field reference cache to $REFERENCE_CACHE_DIR ..."
+        mkdir -p "$REFERENCE_CACHE_DIR"
+        cp "$reference_source" "$REFERENCE_CACHE_DIR/smartdb_field_reference.json"
+    fi
 
     # ── 5. Auto-configure MCP for AI tools ───────────────────────────────────
     local venv_python="$BIN_DIR/python"
@@ -172,6 +182,9 @@ PYEOF
     # ── Done ─────────────────────────────────────────────────────────────────
     echo ""
     green "  ✓ SmartDB MCP Server installed successfully!"
+    echo ""
+    echo "  Reconfigure AI tools later with:"
+    echo "    smartdb ai setup --tools auto"
     echo ""
     echo "  MCP server files:  $MCP_DIR/"
     echo "  Python venv:       $VENV_DIR/"

@@ -56,8 +56,9 @@ Each hospital has a unique form layout that defines which variables they collect
 1. **Identify the hospital** — use hospital code (e.g., `YSU`, `EWU`) or hidx number
 2. **List tables** — see what tables exist for the hospital
 3. **Check the layout** — see ALL variables the hospital actually collects for a table. This is the ground truth.
-4. **Select variables** from the layout results
-5. **Query or export** with those variables
+4. **Validate each hospital separately** — never use YSU fields as a template for other hospitals
+5. **Check data availability** — confirm requested export columns have non-null records for each hospital
+6. **Query or export** only after variable presence, table layout, and data availability are confirmed
 
 **Never guess variable names.** Always show the user what variables exist, then let them choose.
 
@@ -72,6 +73,31 @@ Each hospital has a unique form layout that defines which variables they collect
 | db_19  | Stent procedures                |
 
 **Important:** The same variable name may be stored in different table numbers across hospitals. Variable names are consistent, but table locations differ per hospital.
+
+### Multi-hospital column selection
+
+Before exporting raw variables across hospitals, validate the requested columns for **each hospital**:
+
+- Check the hospital's own table/layout field list before selecting a column.
+- Confirm the column has non-null data for that hospital under the current filters.
+- If a field exists in YSU but is missing or empty elsewhere, stop and ask whether to drop it, map a hospital-specific alternative, keep separate hospital-specific columns, or proceed with explicit empty columns.
+- If formats differ between hospitals (type, options, coded values, or naming), stop and ask how to normalize the values and output column names before exporting.
+- For MCP workflows, call `validate_variable_selection()` before `query_data()` or `export_xlsx()`.
+
+### GitHub-hosted field reference cache
+
+For recurring multi-hospital work, maintain an aggregate reference dataset in `reference/hospital-field-reference/`:
+
+```bash
+python scripts/build_hospital_field_reference.py --privacy public
+```
+
+This generates:
+
+- `smartdb_field_reference.json` for MCP lookup and refresh.
+- `smartdb_field_reference.xlsx` for human review.
+
+The public mode does **not** include patient-level data and suppresses exact aggregate counts. After committing the generated JSON to GitHub, MCP tools can call `refresh_field_reference_cache()`, `lookup_field_reference()`, and `list_field_reference_differences()` to inspect known hospital differences. This cache is advisory only; live `validate_variable_selection()` is still mandatory before exporting.
 
 ---
 
@@ -166,8 +192,16 @@ Variables: `pt_sex`, `pt_age`, `admission_NIH_day_0`, `stroke_type`
 
 ## PLATFORM-SPECIFIC SETUP
 
-### MCP-compatible tools (Claude Code, Claude Desktop, Cursor, Windsurf)
+### MCP-compatible tools (Claude Code, Claude Desktop, Codex, Cursor, Windsurf, Pi Coding Agent)
 The MCP server handles everything — safety warnings, layout checks, and dedicated tools like `get_nihss_scores()` and `get_followup_mrs()` are built in.
+
+Install or reconfigure supported local agents with:
+
+```bash
+smartdb ai setup --tools auto
+```
+
+For a specific client, use `--tools claude-code`, `--tools claude-desktop`, `--tools codex`, `--tools cursor`, `--tools windsurf`, or `--tools pi-agent`.
 
 ### ChatGPT Custom GPT
 1. Paste the "Critical Safety Rules" and "Layout-First Workflow" sections into the GPT's system instructions

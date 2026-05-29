@@ -5,6 +5,7 @@ INSTALL_DIR="$HOME/.smartdb"
 VENV_DIR="$INSTALL_DIR/venv"
 BIN_DIR="$VENV_DIR/bin"
 MCP_DIR="$INSTALL_DIR/mcp-server"
+REFERENCE_CACHE_DIR="$INSTALL_DIR/reference-cache"
 MIN_PYTHON_MINOR=10
 API_URL="https://api.ai.smartstroke.net"
 REPO_URL="https://github.com/jnheo-md/smartdb-tools.git"
@@ -74,42 +75,6 @@ path_line() {
     else
         echo "export PATH=\"$BIN_DIR:\$PATH\""
     fi
-}
-
-# ── Merge MCP config into a JSON file using Python ─────────────────────────
-merge_mcp_config() {
-    local config_file="$1"
-    local python_cmd="$2"
-    local server_script="$3"
-
-    "$python_cmd" - "$config_file" "$python_cmd" "$server_script" <<'PYEOF'
-import json, sys, os
-
-config_file = sys.argv[1]
-python_path = sys.argv[2]
-server_script = sys.argv[3]
-
-data = {}
-if os.path.isfile(config_file):
-    try:
-        with open(config_file, "r") as f:
-            data = json.load(f)
-    except (json.JSONDecodeError, IOError):
-        data = {}
-
-if "mcpServers" not in data:
-    data["mcpServers"] = {}
-
-data["mcpServers"]["smartdb"] = {
-    "command": python_path,
-    "args": [server_script],
-}
-
-os.makedirs(os.path.dirname(config_file), exist_ok=True)
-with open(config_file, "w") as f:
-    json.dump(data, f, indent=2)
-    f.write("\n")
-PYEOF
 }
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -199,6 +164,14 @@ main() {
         fi
     done
 
+    # ── 5b. Copy generated field reference cache if bundled ─────────────────
+    local reference_source="$source_dir/reference/hospital-field-reference/smartdb_field_reference.json"
+    if [ -f "$reference_source" ]; then
+        dim "  Copying field reference cache to $REFERENCE_CACHE_DIR ..."
+        mkdir -p "$REFERENCE_CACHE_DIR"
+        cp "$reference_source" "$REFERENCE_CACHE_DIR/smartdb_field_reference.json"
+    fi
+
     # ── 6. Add to PATH if needed ─────────────────────────────────────────────
     local rc_file line_to_add
     rc_file=$(detect_shell_rc)
@@ -238,88 +211,27 @@ main() {
     fi
 
     # ── 9. Auto-configure MCP for AI tools ───────────────────────────────────
-    local venv_python="$BIN_DIR/python"
-    local server_script="$MCP_DIR/server.py"
-    local configured_any=false
-
     bold "  MCP Configuration"
     echo ""
+    if ! "$BIN_DIR/smartdb" ai setup --tools auto </dev/tty; then
+        dim "  MCP auto-configuration did not complete."
+        dim "  Retry later with: smartdb ai setup --tools auto"
+    fi
 
-    # --- Claude Code ---
     if command -v claude &>/dev/null; then
-        read -rp "  Configure MCP for Claude Code? [Y/n] " ans </dev/tty
-        ans="${ans:-Y}"
-        if [[ "$ans" =~ ^[Yy]$ ]]; then
-            # Remove stale entry from settings.json left by older installer
-            local claude_settings="$HOME/.claude/settings.json"
-            if [ -f "$claude_settings" ]; then
-                "$venv_python" - "$claude_settings" <<'PYEOF'
-import json, sys, os
-cfg = sys.argv[1]
-with open(cfg) as f:
-    data = json.load(f)
-if "mcpServers" in data:
-    data["mcpServers"].pop("smartdb", None)
-    data["mcpServers"].pop("ysr3", None)
-    if not data["mcpServers"]:
-        del data["mcpServers"]
-    with open(cfg, "w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
-PYEOF
-            fi
-            # Use the official CLI to register globally
-            claude mcp add --scope user --transport stdio smartdb \
-                -- "$venv_python" "$server_script"
-            green "  ✓ Claude Code configured (user scope — available in all projects)"
-            configured_any=true
-
-            # Offer to install Claude Code skills
-            local skills_source="$source_dir/.claude/skills"
-            if [ -d "$skills_source" ]; then
-                read -rp "  Install SmartDB skills for Claude Code? (explore, export workflows) [Y/n] " skills_ans </dev/tty
-                skills_ans="${skills_ans:-Y}"
-                if [[ "$skills_ans" =~ ^[Yy]$ ]]; then
-                    local skills_dest="$HOME/.claude/skills"
-                    mkdir -p "$skills_dest"
-                    for sf in "$skills_source"/smartdb-*.md; do
-                        [ -f "$sf" ] && cp "$sf" "$skills_dest/"
-                    done
-                    green "  ✓ SmartDB skills installed to $skills_dest"
-                fi
+        local skills_source="$source_dir/.claude/skills"
+        if [ -d "$skills_source" ]; then
+            read -rp "  Install SmartDB skills for Claude Code? (explore, export workflows) [Y/n] " skills_ans </dev/tty
+            skills_ans="${skills_ans:-Y}"
+            if [[ "$skills_ans" =~ ^[Yy]$ ]]; then
+                local skills_dest="$HOME/.claude/skills"
+                mkdir -p "$skills_dest"
+                for sf in "$skills_source"/smartdb-*.md; do
+                    [ -f "$sf" ] && cp "$sf" "$skills_dest/"
+                done
+                green "  ✓ SmartDB skills installed to $skills_dest"
             fi
         fi
-    fi
-
-    # --- Claude Desktop (macOS) ---
-    local claude_desktop_config="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-    if [[ "$(uname)" == "Darwin" ]] && [ -d "/Applications/Claude.app" ]; then
-        read -rp "  Configure MCP for Claude Desktop? [Y/n] " ans </dev/tty
-        ans="${ans:-Y}"
-        if [[ "$ans" =~ ^[Yy]$ ]]; then
-            merge_mcp_config "$claude_desktop_config" "$venv_python" "$server_script"
-            green "  ✓ Claude Desktop configured ($claude_desktop_config)"
-            configured_any=true
-        fi
-    fi
-
-    # --- Cursor ---
-    local cursor_config="$HOME/.cursor/mcp.json"
-    if [ -d "$HOME/.cursor" ] || command -v cursor &>/dev/null; then
-        read -rp "  Configure MCP for Cursor? [Y/n] " ans </dev/tty
-        ans="${ans:-Y}"
-        if [[ "$ans" =~ ^[Yy]$ ]]; then
-            merge_mcp_config "$cursor_config" "$venv_python" "$server_script"
-            green "  ✓ Cursor configured ($cursor_config)"
-            configured_any=true
-        fi
-    fi
-
-    if [ "$configured_any" = false ]; then
-        dim "  No AI tools detected. You can manually add this MCP config:"
-        echo ""
-        echo "    {\"smartdb\": {\"command\": \"$venv_python\", \"args\": [\"$server_script\"]}}"
-        echo ""
     fi
 
     # ── Done ─────────────────────────────────────────────────────────────────
@@ -328,6 +240,7 @@ PYEOF
     echo ""
     echo "  Verify with:"
     echo "    smartdb whoami"
+    echo "    smartdb ai setup --tools auto   # configure/reconfigure AI tools"
     echo ""
     echo "  MCP server files:  $MCP_DIR/"
     echo "  Python venv:       $VENV_DIR/"

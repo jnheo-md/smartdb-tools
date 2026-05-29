@@ -13,6 +13,7 @@ $INSTALL_DIR = Join-Path $env:USERPROFILE ".smartdb"
 $VENV_DIR    = Join-Path $INSTALL_DIR "venv"
 $SCRIPTS_DIR = Join-Path $VENV_DIR "Scripts"
 $MCP_DIR     = Join-Path $INSTALL_DIR "mcp-server"
+$REFERENCE_CACHE_DIR = Join-Path $INSTALL_DIR "reference-cache"
 $API_URL     = "https://api.ai.smartstroke.net"
 $REPO_URL    = "https://github.com/jnheo-md/smartdb-tools.git"
 $MIN_PYTHON  = [version]"3.10"
@@ -157,6 +158,15 @@ foreach ($f in @("server.py", "api_client.py", "variable_safety.py")) {
     }
 }
 
+# ── 5b. Copy generated field reference cache if bundled ────────────────────
+
+$referenceSource = Join-Path $sourceDir "reference\hospital-field-reference\smartdb_field_reference.json"
+if (Test-Path $referenceSource) {
+    Write-Dim "Copying field reference cache to $REFERENCE_CACHE_DIR ..."
+    New-Item -ItemType Directory -Path $REFERENCE_CACHE_DIR -Force | Out-Null
+    Copy-Item $referenceSource (Join-Path $REFERENCE_CACHE_DIR "smartdb_field_reference.json") -Force
+}
+
 # ── 6. Add to PATH if needed ────────────────────────────────────────────────
 
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -181,75 +191,20 @@ Write-Bold "Login to SmartDB"
 Write-Host "  Enter your credentials to authenticate with the API server."
 Write-Host ""
 & $smartdb login
+if ($LASTEXITCODE -ne 0) {
+    Write-Bad "Login failed after retries. Run 'smartdb login' later to try again."
+    exit 1
+}
 
 # ── 9. Auto-configure MCP for AI tools ───────────────────────────────────────
-
-$venvPython  = Join-Path $SCRIPTS_DIR "python.exe"
-$serverScript = Join-Path $MCP_DIR "server.py"
-$configuredAny = $false
 
 Write-Host ""
 Write-Bold "MCP Configuration"
 Write-Host ""
-
-# Helper to merge MCP config into a JSON file
-function Merge-McpConfig {
-    param($configFile, $pythonPath, $serverPath)
-
-    $data = @{}
-    if (Test-Path $configFile) {
-        try { $data = Get-Content $configFile -Raw | ConvertFrom-Json -AsHashtable } catch { $data = @{} }
-    }
-    if (-not $data.ContainsKey("mcpServers")) { $data["mcpServers"] = @{} }
-    $data["mcpServers"]["smartdb"] = @{
-        command = $pythonPath
-        args    = @($serverPath)
-    }
-
-    $dir = Split-Path $configFile -Parent
-    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    $data | ConvertTo-Json -Depth 10 | Set-Content $configFile -Encoding UTF8
-}
-
-# --- Claude Code ---
-if (Get-Command claude -ErrorAction SilentlyContinue) {
-    $ans = Read-Host "  Configure MCP for Claude Code? [Y/n]"
-    if (-not $ans -or $ans -match "^[Yy]$") {
-        claude mcp add --scope user --transport stdio smartdb -- $venvPython $serverScript
-        Write-Good "Claude Code configured (user scope)"
-        $configuredAny = $true
-    }
-}
-
-# --- Claude Desktop ---
-$claudeDesktopConfig = Join-Path $env:APPDATA "Claude\claude_desktop_config.json"
-$claudeDesktopDir = Split-Path $claudeDesktopConfig -Parent
-if (Test-Path $claudeDesktopDir) {
-    $ans = Read-Host "  Configure MCP for Claude Desktop? [Y/n]"
-    if (-not $ans -or $ans -match "^[Yy]$") {
-        Merge-McpConfig $claudeDesktopConfig $venvPython $serverScript
-        Write-Good "Claude Desktop configured ($claudeDesktopConfig)"
-        $configuredAny = $true
-    }
-}
-
-# --- Cursor ---
-$cursorDir = Join-Path $env:USERPROFILE ".cursor"
-$cursorConfig = Join-Path $cursorDir "mcp.json"
-if ((Test-Path $cursorDir) -or (Get-Command cursor -ErrorAction SilentlyContinue)) {
-    $ans = Read-Host "  Configure MCP for Cursor? [Y/n]"
-    if (-not $ans -or $ans -match "^[Yy]$") {
-        Merge-McpConfig $cursorConfig $venvPython $serverScript
-        Write-Good "Cursor configured ($cursorConfig)"
-        $configuredAny = $true
-    }
-}
-
-if (-not $configuredAny) {
-    Write-Dim "No AI tools detected. You can manually add this MCP config:"
-    Write-Host ""
-    Write-Host "    {`"smartdb`": {`"command`": `"$venvPython`", `"args`": [`"$serverScript`"]}}"
-    Write-Host ""
+& $smartdb ai setup --tools auto
+if ($LASTEXITCODE -ne 0) {
+    Write-Dim "MCP auto-configuration did not complete."
+    Write-Dim "Retry later with: smartdb ai setup --tools auto"
 }
 
 # ── Cleanup temp clone ───────────────────────────────────────────────────────
@@ -265,6 +220,7 @@ Write-Good "SmartDB Tools installed successfully!"
 Write-Host ""
 Write-Host "  Verify with:"
 Write-Host "    smartdb whoami"
+Write-Host "    smartdb ai setup --tools auto   # configure/reconfigure AI tools"
 Write-Host ""
 Write-Host "  MCP server files:  $MCP_DIR\"
 Write-Host "  Python venv:       $VENV_DIR\"

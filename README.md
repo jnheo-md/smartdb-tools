@@ -19,7 +19,7 @@ irm https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.ps1 
 | Component | Description |
 |-----------|-------------|
 | **smartdb CLI** | Command-line tool for querying schemas, patient data, and exporting to XLSX |
-| **MCP Server** | Model Context Protocol server for AI IDEs (Claude Code, Claude Desktop, Cursor) |
+| **MCP Server** | Model Context Protocol server for AI IDEs (Claude Code, Claude Desktop, Codex, Cursor, Windsurf, Pi Coding Agent) |
 
 ## Features
 
@@ -53,9 +53,16 @@ smartdb export xlsx YSU --vars "pt_sex,pt_age" --filters '[{"variable":"Thr_mech
 
 ## AI Integration
 
-### MCP-based tools (Claude, Cursor, Windsurf)
+### MCP-based tools (Claude, Codex, Cursor, Windsurf, Pi Coding Agent)
 
-The installer auto-configures the MCP server with built-in safety rules, layout-first workflows, and dedicated tools for NIHSS and mRS outcomes. To manually configure, add to your MCP settings:
+The installer can auto-configure the MCP server with built-in safety rules, layout-first workflows, per-hospital variable validation before raw exports, and dedicated tools for NIHSS and mRS outcomes. You can rerun AI setup at any time:
+
+```bash
+smartdb ai setup --tools auto
+smartdb ai setup --tools claude-code,claude-desktop,codex,cursor,windsurf,pi-agent
+```
+
+To manually configure another MCP client, add this to its MCP settings:
 
 macOS/Linux:
 ```json
@@ -77,11 +84,21 @@ Windows:
 }
 ```
 
-### CLI-based tools (Codex, Copilot, Aider, etc.)
+### CLI-based tools (Copilot, Aider, etc.)
 
 Any AI agent that can run shell commands on your machine can use the SmartDB CLI directly. See [AGENTS.md](AGENTS.md) for structured instructions that AI agents can follow.
 
 For a comprehensive cross-platform reference, see [docs/SMARTDB_AI_GUIDE.md](docs/SMARTDB_AI_GUIDE.md).
+
+### Cross-hospital field reference
+
+To maintain a GitHub-hosted reference of column presence, table locations, saved-value encodings, and data-presence differences across hospitals:
+
+```bash
+python scripts/build_hospital_field_reference.py --privacy public
+```
+
+Commit the generated files in `reference/hospital-field-reference/`. MCP can refresh the local cache from the raw GitHub JSON with `refresh_field_reference_cache()`, then use `lookup_field_reference()` or `list_field_reference_differences()` before final live validation.
 
 ## Requirements
 

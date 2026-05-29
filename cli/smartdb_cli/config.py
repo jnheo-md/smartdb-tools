@@ -13,8 +13,9 @@ SESSION_DIR: Path = Path.home() / ".smartdb"
 SESSION_FILE: Path = SESSION_DIR / "session.json"
 CONFIG_FILE: Path = SESSION_DIR / "config.json"
 VENV_DIR: Path = SESSION_DIR / "venv"
-BIN_DIR: Path = VENV_DIR / "bin"
+BIN_DIR: Path = VENV_DIR / ("Scripts" if os.name == "nt" else "bin")
 MCP_DIR: Path = SESSION_DIR / "mcp-server"
+REFERENCE_CACHE_DIR: Path = SESSION_DIR / "reference-cache"
 REPO_URL: str = "https://github.com/jnheo-md/smartdb-tools.git"
 REPO_TARBALL_URL: str = "https://github.com/jnheo-md/smartdb-tools/archive/refs/heads/master.tar.gz"
 

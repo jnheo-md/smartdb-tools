@@ -16,6 +16,8 @@ ENV/
 # IDE
 .idea/
 .vscode/
+.codex/
+.omc/
 *.swp
 *.swo
 *~
@@ -37,3 +39,9 @@ session.json
 # Exports
 *.xlsx
 *.csv
+
+# Versioned aggregate schema reference artifacts
+!reference/
+!reference/hospital-field-reference/
+!reference/hospital-field-reference/*.xlsx
+!reference/hospital-field-reference/*.csv

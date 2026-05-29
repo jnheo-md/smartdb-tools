@@ -49,6 +49,8 @@ smartdb export followup YSU --period 3m -v "pt_sex,pt_age"
 ## Key rules
 
 - **Check the layout first**: Different hospitals have different variables. Always explore what a hospital collects before querying.
+- **Validate per hospital**: Never use YSU fields as a template for other hospitals. Confirm field existence, table layout, data presence, and saved-value encoding for each hospital before raw export.
+- **Use the field reference cache when available**: MCP workflows can call `refresh_field_reference_cache()`, `lookup_field_reference()`, and `list_field_reference_differences()` to inspect known cross-hospital differences, then must still run live validation.
 - **Variable encoding**: SELECT/CHECKBOX variables store coded values (1/0), not labels (Yes/No). Run `smartdb schema variable <hospital> <var>` to check.
 - **Date filtering**: Use `adm_date` for admission date, not `onset_hospital_arrival`.
 - **Table locations differ**: The same variable name may be in different table numbers across hospitals (e.g., db_11 at YSU vs db_29 at EWU).

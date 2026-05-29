@@ -45,6 +45,7 @@
       </a>
       <ul class="nav-links" role="menubar">
         <li role="none"><a href="#overview" role="menuitem">Overview</a></li>
+        <li role="none"><a href="#new-user" role="menuitem">Start Here</a></li>
         <li role="none"><a href="#installation" role="menuitem">Installation</a></li>
         <li role="none"><a href="#usage" role="menuitem">Usage</a></li>
         <li role="none"><a href="#environments" role="menuitem">Environments</a></li>
@@ -68,14 +69,14 @@
 
       <div class="header-install">
         <div class="code-block">
-          <code><span class="terminal-label">macOS / Linux</span>
+          <code><span class="install-os-label">macOS / Linux</span>
 curl -fsSL https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.sh | bash</code>
           <button class="copy-btn" data-code="curl -fsSL https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.sh | bash" aria-label="Copy install command for macOS/Linux">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
-        <div class="code-block" style="margin-top: 0.75rem;">
-          <code><span class="terminal-label">Windows (PowerShell)</span>
+        <div class="code-block">
+          <code><span class="install-os-label">Windows (PowerShell)</span>
 irm https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.ps1 | iex</code>
           <button class="copy-btn" data-code="irm https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.ps1 | iex" aria-label="Copy install command for Windows">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -84,6 +85,8 @@ irm https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/install.ps1 
       </div>
 
       <div class="header-links">
+        <a href="#new-user" class="header-link">New User Setup</a>
+        <span class="header-link-sep" aria-hidden="true">/</span>
         <a href="#installation" class="header-link">Installation Guide</a>
         <span class="header-link-sep" aria-hidden="true">/</span>
         <a href="https://github.com/jnheo-md/smartdb-tools" target="_blank" rel="noopener noreferrer" class="header-link">Source Code</a>
@@ -167,17 +170,123 @@ Hospital: YSU | Total patients: 2,847
     </div>
   </section>
 
+  <!-- New User Setup -->
+  <section id="new-user" aria-label="New user setup guide">
+    <div class="container">
+      <div class="section-kicker">For first-time users</div>
+      <h2 class="section-title">Start here if this is a new computer</h2>
+      <p class="section-description">SmartDB Tools can be used by itself in a terminal, or through an AI coding assistant such as Claude Code or Codex. You do not need all options. Pick one path, install the prerequisites, then run the SmartDB installer.</p>
+
+      <div class="path-grid">
+        <article class="path-card recommended-card">
+          <div class="path-badge">Recommended</div>
+          <h3>Terminal only</h3>
+          <p>Best for direct queries and exports. This is the simplest setup and does not require an AI assistant.</p>
+          <ul>
+            <li>Install Python 3.10 or newer</li>
+            <li>Install Git if it is not already installed</li>
+            <li>Run the SmartDB installer</li>
+            <li>Log in with your SmartDB account</li>
+          </ul>
+        </article>
+
+        <article class="path-card">
+          <div class="path-badge secondary">AI + MCP</div>
+          <h3>Claude Code</h3>
+          <p>Best when you want to ask natural-language questions and let the MCP server expose safe SmartDB tools.</p>
+          <ul>
+            <li>Install Node.js 18 or newer</li>
+            <li>Install Claude Code</li>
+            <li>Run the SmartDB installer, which configures MCP</li>
+          </ul>
+        </article>
+
+        <article class="path-card">
+          <div class="path-badge secondary">AI + CLI</div>
+          <h3>Codex</h3>
+          <p>Best when you want an AI coding agent to run SmartDB CLI commands and follow the repository instructions.</p>
+          <ul>
+            <li>Install Node.js and Codex CLI</li>
+            <li>Install SmartDB Tools</li>
+            <li>Open this repository in Codex</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="setup-flow" aria-label="Setup sequence">
+        <div class="setup-step">
+          <span class="step-number">1</span>
+          <div>
+            <h3>Install Python</h3>
+            <p>SmartDB Tools uses Python internally. Install Python 3.10 or newer from <a href="https://www.python.org/downloads/" target="_blank" rel="noopener noreferrer">python.org</a>. The installer also needs Git; install it from <a href="https://git-scm.com/downloads" target="_blank" rel="noopener noreferrer">git-scm.com</a> if your computer does not already have it. Then open Terminal or PowerShell and confirm:</p>
+            <div class="code-block compact-code">
+              <code>python3 --version
+git --version</code>
+              <button class="copy-btn" data-code="python3 --version&#10;git --version" aria-label="Copy prerequisite check commands">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+            <p class="helper-text">On Windows, use <code>python --version</code> if <code>python3</code> is not recognized.</p>
+          </div>
+        </div>
+
+        <div class="setup-step">
+          <span class="step-number">2</span>
+          <div>
+            <h3>Optional: install an AI coding assistant</h3>
+            <p>Skip this step if you only want terminal commands. For Claude Code or Codex, install Node.js first from <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">nodejs.org</a>, then choose one assistant:</p>
+            <div class="split-code-grid">
+              <div>
+                <p class="mini-label">Claude Code</p>
+                <div class="code-block compact-code">
+                  <code>npm install -g @anthropic-ai/claude-code
+claude --version</code>
+                  <button class="copy-btn" data-code="npm install -g @anthropic-ai/claude-code&#10;claude --version" aria-label="Copy Claude Code install command">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                </div>
+                <p class="helper-text">Official guide: <a href="https://code.claude.com/docs/en/quickstart" target="_blank" rel="noopener noreferrer">Claude Code quickstart</a>.</p>
+              </div>
+              <div>
+                <p class="mini-label">Codex CLI</p>
+                <div class="code-block compact-code">
+                  <code>npm install -g @openai/codex
+codex --version</code>
+                  <button class="copy-btn" data-code="npm install -g @openai/codex&#10;codex --version" aria-label="Copy Codex install command">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                </div>
+                <p class="helper-text">Official guide: <a href="https://help.openai.com/en/articles/11096431" target="_blank" rel="noopener noreferrer">OpenAI Codex CLI setup</a>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="setup-step">
+          <span class="step-number">3</span>
+          <div>
+            <h3>Install SmartDB Tools</h3>
+            <p>Run the installer for your operating system. The installer creates a private Python environment in <code>~/.smartdb</code>, installs the CLI, and offers to configure MCP where supported.</p>
+            <p class="helper-text">If login fails because of a mistyped password, SmartDB gives you three attempts before stopping. After installation, use <code>smartdb ai setup --tools auto</code> to reconfigure Claude Code, Claude Desktop, Codex, Cursor, Windsurf, or Pi Coding Agent.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Installation -->
   <section id="installation" aria-label="Installation">
     <div class="container">
       <h2 class="section-title">Installation</h2>
 
       <div class="install-section">
-        <h3>Prerequisites</h3>
+        <h3>Prerequisites checklist</h3>
         <ul class="prereq-list">
-          <li>Python 3.10 or later</li>
-          <li>macOS, Linux, or Windows 10/11</li>
-          <li>Authorized SmartDB registry account</li>
+          <li><strong>Required:</strong> Python 3.10 or later</li>
+          <li><strong>Required:</strong> Git, so the installer can download the project source</li>
+          <li><strong>Required:</strong> macOS, Linux, or Windows 10/11</li>
+          <li><strong>Required:</strong> authorized SmartDB registry account</li>
+          <li><strong>Optional for Claude Code/Codex:</strong> Node.js 18 or later and an authenticated AI assistant account</li>
         </ul>
       </div>
 
@@ -205,8 +314,9 @@ Hospital: YSU | Total patients: 2,847
         <p>Authenticate with your registry credentials and verify access:</p>
         <div class="code-block">
           <code>smartdb login
-smartdb whoami</code>
-          <button class="copy-btn" data-code="smartdb login&#10;smartdb whoami" aria-label="Copy post-install commands">
+smartdb whoami
+smartdb ai setup --tools auto</code>
+          <button class="copy-btn" data-code="smartdb login&#10;smartdb whoami&#10;smartdb ai setup --tools auto" aria-label="Copy post-install commands">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -273,9 +383,9 @@ smartdb clot composition YSU YSU001</code>
         <h3>Data Export</h3>
         <p>Export filtered datasets to XLSX for downstream analysis.</p>
         <div class="code-block">
-          <code>smartdb export data YSU --vars "pt_sex,pt_age,admission_NIH_day_0"
+          <code>smartdb export xlsx YSU --vars "pt_sex,pt_age,admission_NIH_day_0"
 smartdb export followup YSU -p 3m -v "pt_sex,pt_age"</code>
-          <button class="copy-btn" data-code="smartdb export data YSU --vars &quot;pt_sex,pt_age,admission_NIH_day_0&quot;&#10;smartdb export followup YSU -p 3m -v &quot;pt_sex,pt_age&quot;" aria-label="Copy export commands">
+          <button class="copy-btn" data-code="smartdb export xlsx YSU --vars &quot;pt_sex,pt_age,admission_NIH_day_0&quot;&#10;smartdb export followup YSU -p 3m -v &quot;pt_sex,pt_age&quot;" aria-label="Copy export commands">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
@@ -307,22 +417,27 @@ smartdb export followup YSU -p 3m -v "pt_sex,pt_age"</code>
             <tr>
               <td>Claude Code</td>
               <td>MCP + CLI</td>
-              <td>Auto-configured during install. MCP provides tools and safety warnings. Optional skills available.</td>
+              <td>Auto-configured during install, or rerun <code>smartdb ai setup --tools claude-code</code>. Optional skills available.</td>
             </tr>
             <tr>
               <td>Claude Desktop</td>
               <td>MCP</td>
-              <td>Auto-configured during install via MCP config</td>
+              <td>Run <code>smartdb ai setup --tools claude-desktop</code></td>
             </tr>
             <tr>
               <td>Cursor / Windsurf</td>
               <td>MCP</td>
-              <td>Auto-configured during install via MCP config</td>
+              <td>Run <code>smartdb ai setup --tools cursor,windsurf</code></td>
             </tr>
             <tr>
-              <td>Codex (VS Code)</td>
-              <td>CLI</td>
-              <td>Uses the CLI directly via terminal. Reads <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> for instructions.</td>
+              <td>Codex</td>
+              <td>MCP + CLI</td>
+              <td>Run <code>smartdb ai setup --tools codex</code>. Also reads <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> for CLI instructions.</td>
+            </tr>
+            <tr>
+              <td>Pi Coding Agent</td>
+              <td>MCP</td>
+              <td>Run <code>smartdb ai setup --tools pi-agent</code></td>
             </tr>
             <tr>
               <td>Copilot / Aider / Other</td>
@@ -335,8 +450,14 @@ smartdb export followup YSU -p 3m -v "pt_sex,pt_age"</code>
 
       <div class="install-section">
         <h3>AI Agent Setup</h3>
-        <p><strong>MCP-based tools</strong> (Claude, Cursor, Windsurf): The installer auto-configures the MCP server with built-in safety rules, layout-first workflows, and dedicated tools for NIHSS and mRS outcomes.</p>
-        <p><strong>CLI-based tools</strong> (Codex, Copilot, Aider): Install the CLI, then the AI agent can run <code>smartdb guide</code> to learn the domain rules and use any <code>smartdb</code> command. An <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> file in the repository provides structured instructions for AI agents.</p>
+        <p><strong>MCP-based tools</strong> (Claude, Codex, Cursor, Windsurf, Pi Coding Agent): The installer can auto-configure the MCP server with built-in safety rules, layout-first workflows, and dedicated tools for NIHSS and mRS outcomes. Rerun setup any time with:</p>
+        <div class="code-block">
+          <code>smartdb ai setup --tools auto</code>
+          <button class="copy-btn" data-code="smartdb ai setup --tools auto" aria-label="Copy AI setup command">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+        <p><strong>CLI-based tools</strong> (Copilot, Aider, and other shell-capable agents): Install the CLI, then the AI agent can run <code>smartdb guide</code> to learn the domain rules and use any <code>smartdb</code> command. An <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> file in the repository provides structured instructions for AI agents.</p>
         <p>For the full cross-platform AI reference, see <a href="https://github.com/jnheo-md/smartdb-tools/blob/master/docs/SMARTDB_AI_GUIDE.md" target="_blank" rel="noopener noreferrer">SMARTDB_AI_GUIDE.md</a>.</p>
       </div>
     </div>

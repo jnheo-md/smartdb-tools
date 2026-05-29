@@ -14,6 +14,7 @@ from smartdb_cli import __version__
 from smartdb_cli.commands.schema import app as schema_app
 from smartdb_cli.commands.query import app as query_app
 from smartdb_cli.commands.export import app as export_app
+from smartdb_cli.commands.ai import app as ai_app
 
 app = typer.Typer(
     name="smartdb",
@@ -30,6 +31,7 @@ app = typer.Typer(
 app.add_typer(schema_app, name="schema", help="Explore hospital schemas, tables, and variables.")
 app.add_typer(query_app, name="query", help="Query patient data from the stroke registry.")
 app.add_typer(export_app, name="export", help="Export patient data to XLSX files.")
+app.add_typer(ai_app, name="ai", help="Configure SmartDB for AI assistants and MCP clients.")
 
 
 def _version_callback(value: bool) -> None:
@@ -53,31 +55,50 @@ def main(
 # ---------------------------------------------------------------------------
 
 @app.command()
-def login() -> None:
+def login(
+    retries: int = typer.Option(
+        3,
+        "--retries",
+        "-r",
+        min=1,
+        help="Number of login attempts before aborting.",
+    ),
+) -> None:
     """Log in to the SmartDB registry."""
     from smartdb_cli import auth
     from smartdb_cli.api_client import APIError
-    from smartdb_cli.formatting import console, print_error, print_success
+    from smartdb_cli.formatting import print_error, print_success, print_warning
 
-    email = typer.prompt("Email")
-    password = typer.prompt("Password", hide_input=True)
+    last_error: str | None = None
 
-    try:
-        session = auth.login(email, password)
-        level_label = auth.get_user_level_label(session["level"])
-        print_success(
-            f"Welcome, {session['uname']}! "
-            f"(level: {level_label}, hospital: {session['hidx']})"
-        )
-    except auth.AuthenticationError as exc:
-        print_error(str(exc))
-        raise typer.Exit(code=1)
-    except APIError as exc:
-        print_error(f"Login failed: {exc}")
-        raise typer.Exit(code=1)
-    except Exception as exc:
-        print_error(f"Login failed: {exc}")
-        raise typer.Exit(code=1)
+    for attempt in range(1, retries + 1):
+        if retries > 1:
+            typer.echo(f"Login attempt {attempt}/{retries}")
+
+        email = typer.prompt("Email")
+        password = typer.prompt("Password", hide_input=True)
+
+        try:
+            session = auth.login(email, password)
+            level_label = auth.get_user_level_label(session["level"])
+            print_success(
+                f"Welcome, {session['uname']}! "
+                f"(level: {level_label}, hospital: {session['hidx']})"
+            )
+            return
+        except auth.AuthenticationError as exc:
+            last_error = str(exc)
+        except APIError as exc:
+            last_error = f"Login failed: {exc}"
+        except Exception as exc:
+            last_error = f"Login failed: {exc}"
+
+        print_error(last_error)
+        remaining = retries - attempt
+        if remaining:
+            print_warning(f"Try again ({remaining} attempt{'s' if remaining != 1 else ''} left).")
+
+    raise typer.Exit(code=1)
 
 
 @app.command()
@@ -100,7 +121,13 @@ def update() -> None:
     import tempfile
     from urllib.request import urlopen
 
-    from smartdb_cli.config import BIN_DIR, MCP_DIR, REPO_TARBALL_URL, REPO_URL
+    from smartdb_cli.config import (
+        BIN_DIR,
+        MCP_DIR,
+        REFERENCE_CACHE_DIR,
+        REPO_TARBALL_URL,
+        REPO_URL,
+    )
     from smartdb_cli.formatting import console, print_error, print_success
 
     old_version = __version__
@@ -172,7 +199,22 @@ def update() -> None:
                 if src.exists():
                     shutil.copy2(src, MCP_DIR / filename)
 
-        # -- Step 5: Report version ------------------------------------------
+        # -- Step 5: Copy generated field reference cache if included ---------
+        src_reference = (
+            Path(repo_dir)
+            / "reference"
+            / "hospital-field-reference"
+            / "smartdb_field_reference.json"
+        )
+        if src_reference.exists():
+            with console.status("[bold cyan]Updating field reference cache…"):
+                REFERENCE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(
+                    src_reference,
+                    REFERENCE_CACHE_DIR / "smartdb_field_reference.json",
+                )
+
+        # -- Step 6: Report version ------------------------------------------
         new_version = importlib.metadata.version("smartdb-cli")
         if new_version == old_version:
             print_success(f"Already up to date (v{old_version}).")
@@ -324,14 +366,41 @@ variables they use. For the MCP server, use get_nihss_scores().
 
 NOTE: 'NIHSS_total' does NOT exist as a variable.
 
-## 3. Follow-up Periods
+## 3. Multi-Hospital Variable Selection
+
+Never use YSU as the template for other hospitals. Before raw query/export:
+  1. Check each hospital's own tables and form layout.
+  2. Confirm each requested export column exists in that hospital's field list.
+  3. Confirm each requested export column has non-null data under the current filters.
+  4. Compare type/options/value encoding across hospitals before merging columns.
+
+If a field exists in YSU but is missing or empty elsewhere, STOP and ask the
+user whether to drop it, map a hospital-specific alternative, keep separate
+hospital-specific columns, or proceed with an explicit empty column.
+
+If formats differ between hospitals (e.g., TOAST-like coded fields), STOP and
+ask how to normalize values and output column names before exporting.
+
+For the MCP server, use validate_variable_selection() before query_data() or
+export_xlsx().
+
+For recurring multi-hospital exports, keep a GitHub-hosted reference generated
+by:
+  python scripts/build_hospital_field_reference.py --privacy public
+
+This creates reference/hospital-field-reference/smartdb_field_reference.json
+and .xlsx. MCP can refresh/read this with refresh_field_reference_cache(),
+lookup_field_reference(), and list_field_reference_differences(). The cache is
+advisory only; still run live validate_variable_selection() before export.
+
+## 4. Follow-up Periods
 
 Available: 3m, 6m, 9m, 12m, 2y, 3y, 4y, 5y, 6y, 7y, 8y, 9y, 10y
 
 Each period corresponds to a checkbox column in db_5 (e.g., threefu_cohort).
 A single patient can have multiple cohort rows (one per follow-up visit).
 
-## 4. Filtering by Treatment / Subgroup
+## 5. Filtering by Treatment / Subgroup
 
 Use --filters with 'query followup' or 'export followup' to select subgroups:
 
@@ -345,7 +414,7 @@ Use --filters with 'query followup' or 'export followup' to select subgroups:
 
 Filters are applied to both the cohort query and the death imputation query.
 
-## 5. Key Date Variables
+## 6. Key Date Variables
 
 When filtering patients by time period, use these date variables:
   - 'adm_date' (db_11): Admission date (입원일자) — USE THIS for selecting
@@ -359,26 +428,26 @@ When filtering patients by time period, use these date variables:
 Example: patients admitted from June 2024:
   -f '[{"variable":"adm_date","operator":">=","value":"2024-06-01"}]'
 
-## 6. Variable Value Encoding
+## 7. Variable Value Encoding
 
 SELECT/CHECKBOX variables store coded values, NOT labels:
   - Thr_mechanical: 1 = Yes, 0 = No  (NOT "Yes"/"No")
   - pt_sex: M / F
   - Use 'smartdb schema variable <hospital> <var>' to see the value map.
 
-## 7. Hospital Codes
+## 8. Hospital Codes
 
 Use hospital code (e.g., 'YSU') or hidx number (e.g., '1').
 Run 'smartdb schema hospitals' to see all available hospitals.
 Not all hospitals have the same tables or variables.
 
-## 8. Table Hierarchy
+## 9. Table Hierarchy
 
 Tables are hierarchical: db_1 (Patient) -> db_11 (Admission) -> db_12 (Treatment).
 'query data' automatically JOINs across tables when you request variables from
 different tables. No manual JOIN needed.
 
-## 9. Exporting Data
+## 10. Exporting Data
 
   - 'export xlsx': Export raw variable data to XLSX
   - 'export followup': Export cohort-based mRS outcomes to XLSX (PREFERRED for outcomes)

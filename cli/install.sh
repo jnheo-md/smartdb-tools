@@ -146,7 +146,7 @@ main() {
         bold "  Login to SmartDB"
         echo "  Enter your credentials to authenticate with the API server."
         echo ""
-        "$BIN_DIR/smartdb" login
+        "$BIN_DIR/smartdb" login </dev/tty
         echo ""
     else
         dim "  Skipping login (--no-login flag set)."
@@ -159,6 +159,7 @@ main() {
     echo ""
     echo "  Verify with:"
     echo "    smartdb whoami"
+    echo "    smartdb ai setup --tools auto   # after MCP server install"
     echo ""
     echo "  To install the MCP server for AI tools (Claude, Cursor, etc.),"
     echo "  see: https://github.com/jnheo-md/smartdb-tools"
