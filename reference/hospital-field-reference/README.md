@@ -16,8 +16,9 @@ Regenerate:
 python scripts/build_hospital_field_reference.py --privacy public
 ```
 
-Generated at: `2026-07-06T08:11:52.751074+00:00`
+Generated at: `2026-07-06T08:26:25.001023+00:00`
 Privacy mode: `public`
-Hospitals: `28`
-Fields: `22481`
-Differences: `4515`
+Excluded test hospitals: `SMU`
+Hospitals: `27`
+Fields: `19884`
+Differences: `3899`

@@ -32,6 +32,9 @@ DEFAULT_REFERENCE_URL = (
     "https://raw.githubusercontent.com/jnheo-md/smartdb-tools/master/"
     "reference/hospital-field-reference/smartdb_field_reference.json"
 )
+EXCLUDED_TEST_HOSPITAL_CODES = frozenset({"SMU"})
+EXCLUDED_TEST_HOSPITAL_HIDXS = frozenset({"4"})
+EXCLUDED_TEST_HOSPITAL_NAMES = frozenset({"스마트 병원"})
 
 
 class APIError(RuntimeError):
@@ -107,6 +110,30 @@ def get_token() -> str | None:
         return None
 
 
+def include_test_hospitals(override: bool = False) -> bool:
+    if override:
+        return True
+    return os.environ.get("SMARTDB_INCLUDE_TEST_HOSPITALS", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def is_excluded_test_hospital(hospital: dict[str, Any], include_tests: bool) -> bool:
+    if include_tests:
+        return False
+    code = str(hospital.get("code", "")).strip().upper()
+    hidx = str(hospital.get("hidx", "")).strip()
+    name = str(hospital.get("name", "")).strip()
+    return (
+        code in EXCLUDED_TEST_HOSPITAL_CODES
+        or hidx in EXCLUDED_TEST_HOSPITAL_HIDXS
+        or name in EXCLUDED_TEST_HOSPITAL_NAMES
+    )
+
+
 def stable_json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
@@ -140,11 +167,23 @@ def sanitize_count(
     return None, f"{min_cell_size}+", True
 
 
-def list_hospitals(client: SmartDBClient, selected_codes: set[str] | None) -> list[dict[str, Any]]:
+def list_hospitals(
+    client: SmartDBClient,
+    selected_codes: set[str] | None,
+    include_tests: bool = False,
+) -> list[dict[str, Any]]:
     hospitals = client.get("/schema/hospitals")
     normalized = []
     for hospital in hospitals:
         code = str(hospital.get("code", ""))
+        if is_excluded_test_hospital(hospital, include_tests):
+            if selected_codes and code in selected_codes:
+                print(
+                    f"Skipping test hospital {code}. Use --include-test-hospitals "
+                    "to include it for maintenance.",
+                    file=sys.stderr,
+                )
+            continue
         if selected_codes and code not in selected_codes:
             continue
         normalized.append({
@@ -729,6 +768,7 @@ def write_readme(output_dir: Path, dataset: dict[str, Any]) -> Path:
             "",
             f"Generated at: `{metadata['generated_at']}`",
             f"Privacy mode: `{metadata['privacy']}`",
+            f"Excluded test hospitals: `{', '.join(metadata.get('excluded_test_hospitals', [])) or 'none'}`",
             f"Hospitals: `{metadata['hospital_count']}`",
             f"Fields: `{metadata['field_count']}`",
             f"Differences: `{metadata['difference_count']}`",
@@ -783,6 +823,11 @@ def parse_args() -> argparse.Namespace:
         help="Testing/debug only: limit fields collected per hospital.",
     )
     parser.add_argument(
+        "--include-test-hospitals",
+        action="store_true",
+        help="Include SmartDB test hospitals such as SMU. Default: excluded.",
+    )
+    parser.add_argument(
         "--workers",
         type=int,
         default=8,
@@ -811,10 +856,11 @@ def main() -> int:
             "Using public privacy mode: exact aggregate counts will be suppressed.",
             file=sys.stderr,
         )
+    include_tests = include_test_hospitals(args.include_test_hospitals)
 
     client = SmartDBClient()
     try:
-        hospitals = list_hospitals(client, selected_codes)
+        hospitals = list_hospitals(client, selected_codes, include_tests=include_tests)
         if not hospitals:
             raise APIError("No hospitals found or selected.")
 
@@ -840,6 +886,7 @@ def main() -> int:
             "privacy": args.privacy,
             "data_checks": not args.no_data_checks,
             "min_cell_size": max(2, args.min_cell_size),
+            "excluded_test_hospitals": [] if include_tests else sorted(EXCLUDED_TEST_HOSPITAL_CODES),
             "hospital_count": len(hospitals),
             "field_count": len(fields),
             "difference_count": len(differences),
